@@ -61,12 +61,10 @@ function ViewCartButton({ cartItems, removeItemFromCart }) {
   }
 
   function calculateCheckoutPrice() {
-    if (cartItems && cartItems.length > 0) {
-      const totalPrice = cartItems.reduce((accumulator, item) => {
-        return accumulator + item.totalItemPrice;
-      }, 0);
-      setTotalCheckoutPrice(totalPrice);
-    }
+    const totalPrice = cartItems.reduce((accumulator, item) => {
+      return accumulator + item.totalItemPrice;
+    }, 0);
+    setTotalCheckoutPrice(totalPrice);
   }
 
   useEffect(() => {
@@ -155,7 +153,7 @@ function CartList({
         YOUR CART
       </h2>
       <p className="my-5 mx-5" style={checkoutPriceDisplayerStyle}>
-        total price : ${totalCheckoutPrice}
+        Total price: ${totalCheckoutPrice.toFixed(2)}
       </p>
       <button
         className="btn m-2"

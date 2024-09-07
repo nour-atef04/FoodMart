@@ -53,7 +53,7 @@ function App() {
 
   function removeItemFromCart(cartItemId) {
     setCartItems((prevItems) =>
-      prevItems.filter((item, index) => index !== cartItemId)
+      prevItems.filter((_, index) => index !== cartItemId)
     );
   }
 
