@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Children } from "react";
+import backgroundImg from "../images/diagonal-striped-brick.png";
 
 export default function NavBar({ cartItems, removeItemFromCart }) {
+
   function removeItem(cartItemId) {
     removeItemFromCart(cartItemId);
   }
@@ -9,7 +10,7 @@ export default function NavBar({ cartItems, removeItemFromCart }) {
   return (
     <nav className="navbar py-0">
       <div
-        style={{ backgroundColor: "#adc178" }}
+        style={{ backgroundColor: "#adc178", backgroundImage:`url(${backgroundImg})` }}
         className="container-fluid py-3"
       >
         <Title />

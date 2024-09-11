@@ -56,6 +56,7 @@ function AddToCart({ id, AddItem }) {
 
   function handleClick() {
     AddItem(id, quantity);
+    setQuantity(1);
   }
 
   const buttonStyle = {
