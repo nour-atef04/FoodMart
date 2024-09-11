@@ -2,21 +2,80 @@ import React, { useState, useEffect } from "react";
 import backgroundImg from "../images/diagonal-striped-brick.png";
 
 export default function NavBar({ cartItems, removeItemFromCart }) {
-
   function removeItem(cartItemId) {
     removeItemFromCart(cartItemId);
   }
 
   return (
-    <nav className="navbar py-0">
-      <div
-        style={{ backgroundColor: "#adc178", backgroundImage:`url(${backgroundImg})` }}
-        className="container-fluid py-3"
-      >
-        <Title />
-        <ViewCartButton cartItems={cartItems} removeItemFromCart={removeItem} />
-      </div>
-    </nav>
+    <>
+      <nav className="navbar navbar-expand-lg py-0">
+        <div
+          className="container-fluid py-3"
+          style={{
+            backgroundColor: "#adc178",
+            backgroundImage: `url(${backgroundImg})`,
+          }}
+        >
+          <div className="navbar-brand">
+            <Title />
+          </div>
+          <NavBarButton
+            className={"navbar-toggler me-5"}
+            dataBsToggle={"collapse"}
+            dataBsTarget={"#navbarSupportedContent"}
+            ariaLabel={"Toggle navigation"}
+            title={
+              <svg
+                className="w-6 h-6 text-gray-800 dark:text-white"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeWidth="2"
+                  d="M5 7h14M5 12h14M5 17h14"
+                />
+              </svg>
+            }
+          />
+          <div className="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul className="navbar-nav w-100 d-flex justify-content-between align-items-center">
+              <li className="nav-item m-4 mx-auto">
+                <SearchBar />
+              </li>
+              <li className="nav-item">
+                <ViewCartButton
+                  cartItems={cartItems}
+                  removeItemFromCart={removeItem}
+                />
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      {/* <nav className="navbar py-0">
+        <div
+          style={{
+            backgroundColor: "#adc178",
+            backgroundImage: `url(${backgroundImg})`,
+          }}
+          className="container-fluid py-3"
+        >
+          <Title />
+          <SearchBar />
+          <ViewCartButton
+            cartItems={cartItems}
+            removeItemFromCart={removeItem}
+          />
+        </div>
+      </nav> */}
+    </>
   );
 }
 
@@ -33,25 +92,38 @@ function Title() {
     <div style={titleDivStyle}>
       <h1
         style={{ fontFamily: '"Playwrite CU", cursive' }}
-        className="mx-5 mb-0"
+        className="ms-5 mb-0"
       >
         FoodMart
       </h1>
-      <p className="mb-0">Groccery Store</p>
+      <p className="ms-5 mb-0">Groccery Store</p>
     </div>
   );
 }
 
-//WHEN CLICKED, VIEW THE ITEMS INSIDE THE CART
+function SearchBar() {
+  return (
+    <form className="d-flex" role="search">
+      <input
+        className="form-control me-2"
+        type="search"
+        placeholder="Search Product"
+        aria-label="Search"
+      />
+      <SearchButton />
+    </form>
+  );
+}
 
-function ViewCartButton({ cartItems, removeItemFromCart }) {
-  const [visibility, setVisibility] = useState("none");
+function NavBarButton({
+  handleClick,
+  title,
+  className,
+  dataBsToggle,
+  dataBsTarget,
+  ariaLabel,
+}) {
   const [buttonBackground, setButtonBackground] = useState("transparent");
-  const [totalCheckoutPrice, setTotalCheckoutPrice] = useState(0);
-
-  function handleClick() {
-    setVisibility(visibility === "none" ? "block" : "none");
-  }
 
   function handleMouseOver() {
     setButtonBackground("#8B9A61");
@@ -59,6 +131,41 @@ function ViewCartButton({ cartItems, removeItemFromCart }) {
 
   function handleMouseOut() {
     setButtonBackground("transparent");
+  }
+
+  return (
+    <button
+      className={className}
+      type="button"
+      data-bs-toggle={dataBsToggle}
+      data-bs-target={dataBsTarget}
+      aria-label={ariaLabel}
+      style={{
+        color: "white",
+        border: "2px solid white",
+        background: buttonBackground,
+      }}
+      onClick={handleClick}
+      onMouseOver={handleMouseOver}
+      onMouseOut={handleMouseOut}
+    >
+      {title}
+    </button>
+  );
+}
+
+function SearchButton() {
+  return <NavBarButton title={"Search"} className={"btn mx-1"} />;
+}
+
+//WHEN CLICKED, VIEW THE ITEMS INSIDE THE CART
+
+function ViewCartButton({ cartItems, removeItemFromCart }) {
+  const [visibility, setVisibility] = useState("none");
+  const [totalCheckoutPrice, setTotalCheckoutPrice] = useState(0);
+
+  function handleClick() {
+    setVisibility(visibility === "none" ? "block" : "none");
   }
 
   function calculateCheckoutPrice() {
@@ -74,20 +181,11 @@ function ViewCartButton({ cartItems, removeItemFromCart }) {
 
   return (
     <>
-      <button
-        className="btn mx-5"
-        type="button"
-        style={{
-          color: "white",
-          border: "2px solid white",
-          background: buttonBackground,
-        }}
-        onClick={handleClick}
-        onMouseOver={handleMouseOver}
-        onMouseOut={handleMouseOut}
-      >
-        View Your Cart
-      </button>
+      <NavBarButton
+        handleClick={handleClick}
+        title={"View your cart"}
+        className={"btn mx-5"}
+      />
       <CartList
         cartItemsLength={cartItems.length}
         visibility={visibility}

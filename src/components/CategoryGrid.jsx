@@ -35,11 +35,12 @@ const categories = [
 export default function CategoryGrid({ filterStoreProducts }) {
   const [hoveredIndex, setHoveredIndex] = useState(-1);
   const [background, setBackground] = useState(defaultBackgroundImg);
-  const [categorySelectedBackground, setCategorySelectedBackground] = useState(null);
+  const [categorySelectedBackground, setCategorySelectedBackground] =
+    useState(null);
 
   const imageStyle = (isHovered) => ({
-    width: "140px",
-    height: "140px",
+    width: "140px", 
+    height: "140px", 
     objectFit: "cover",
     borderRadius: "50%",
     transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
@@ -48,13 +49,18 @@ export default function CategoryGrid({ filterStoreProducts }) {
     cursor: "pointer",
   });
 
-  const backgroundStyle = (background) => ({
-    backgroundColor: "#F3F1EB",
-    backgroundImage: `url(${background})`,
-    backgroundRepeat: "no-repeat",
-    backgroundSize: "contain",
-    transition: "background-image 0.5s ease-in-out, opacity 0.5s ease-in-out",
-  });
+  const backgroundStyle = (background) => {
+    const isSmallScreen = window.innerWidth <= 990;
+    return {
+      backgroundColor: "#F3F1EB",
+      backgroundImage: isSmallScreen ? "none" : `url(${background})`,
+      backgroundRepeat: isSmallScreen ? "none" : "no-repeat",
+      backgroundSize: isSmallScreen ? "none" : "contain",
+      // Apply transitions only on larger screens
+      transition: isSmallScreen ? "none" : "background-image 0.5s ease-in-out, opacity 0.5s ease-in-out",
+    };
+  };
+  
 
   function handleMouseOver(index) {
     setHoveredIndex(index);
@@ -63,7 +69,9 @@ export default function CategoryGrid({ filterStoreProducts }) {
 
   function handleMouseOut() {
     setHoveredIndex(-1);
-    categorySelectedBackground ? setBackground(categorySelectedBackground) : setBackground(defaultBackgroundImg);
+    categorySelectedBackground
+      ? setBackground(categorySelectedBackground)
+      : setBackground(defaultBackgroundImg);
   }
 
   function handleClick(index) {
@@ -73,7 +81,6 @@ export default function CategoryGrid({ filterStoreProducts }) {
 
   return (
     <>
-      {" "}
       <div className="mb-5">
         <div className="p-5 text-center" style={backgroundStyle(background)}>
           <div className="container p-1">
@@ -99,6 +106,7 @@ export default function CategoryGrid({ filterStoreProducts }) {
                     }}
                   >
                     <img
+                      
                       style={imageStyle(hoveredIndex === index)}
                       alt={category.categoryName + "category"}
                       src={category.categoryImgURL}

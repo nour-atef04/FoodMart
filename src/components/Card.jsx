@@ -12,7 +12,7 @@ export default function Card({
   }
 
   return (
-    <div className="card" style={{ width: "14rem", height: "20rem" }}>
+    <div className="card" style={{ width: "100%", height: "100%" }}>
       <img
         src={storeProductImg}
         className="card-img-top"
