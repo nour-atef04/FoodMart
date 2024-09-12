@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
+import NavBarButton from "./MyButton";
 import backgroundImg from "../images/diagonal-striped-brick.png";
 
-export default function NavBar({ cartItems, removeItemFromCart }) {
+export default function NavBar({ cartItems, removeItemFromCart, children }) {
   function removeItem(cartItemId) {
     removeItemFromCart(cartItemId);
   }
@@ -16,14 +17,14 @@ export default function NavBar({ cartItems, removeItemFromCart }) {
             backgroundImage: `url(${backgroundImg})`,
           }}
         >
-          <div className="navbar-brand">
-            <Title />
-          </div>
+          <div className="navbar-brand">{children[1]}</div>
           <NavBarButton
             className={"navbar-toggler me-5"}
             dataBsToggle={"collapse"}
             dataBsTarget={"#navbarSupportedContent"}
             ariaLabel={"Toggle navigation"}
+            color={"white"}
+            hoverColor={"#8B9A61"}
             title={
               <svg
                 className="w-6 h-6 text-gray-800 dark:text-white"
@@ -45,11 +46,9 @@ export default function NavBar({ cartItems, removeItemFromCart }) {
           />
           <div className="collapse navbar-collapse" id="navbarSupportedContent">
             <ul className="navbar-nav w-100 d-flex justify-content-between align-items-center">
-              <li className="nav-item m-4 mx-auto">
-                <SearchBar />
-              </li>
+              <li className="nav-item m-4 mx-auto">{children[0]}</li>
               <li className="nav-item">
-                <ViewCartButton
+                <ViewCart
                   cartItems={cartItems}
                   removeItemFromCart={removeItem}
                 />
@@ -79,88 +78,9 @@ export default function NavBar({ cartItems, removeItemFromCart }) {
   );
 }
 
-function Title() {
-  const titleDivStyle = {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    color: "white",
-  };
-
-  return (
-    <div style={titleDivStyle}>
-      <h1
-        style={{ fontFamily: '"Playwrite CU", cursive' }}
-        className="ms-5 mb-0"
-      >
-        FoodMart
-      </h1>
-      <p className="ms-5 mb-0">Groccery Store</p>
-    </div>
-  );
-}
-
-function SearchBar() {
-  return (
-    <form className="d-flex" role="search">
-      <input
-        className="form-control me-2"
-        type="search"
-        placeholder="Search Product"
-        aria-label="Search"
-      />
-      <SearchButton />
-    </form>
-  );
-}
-
-function NavBarButton({
-  handleClick,
-  title,
-  className,
-  dataBsToggle,
-  dataBsTarget,
-  ariaLabel,
-}) {
-  const [buttonBackground, setButtonBackground] = useState("transparent");
-
-  function handleMouseOver() {
-    setButtonBackground("#8B9A61");
-  }
-
-  function handleMouseOut() {
-    setButtonBackground("transparent");
-  }
-
-  return (
-    <button
-      className={className}
-      type="button"
-      data-bs-toggle={dataBsToggle}
-      data-bs-target={dataBsTarget}
-      aria-label={ariaLabel}
-      style={{
-        color: "white",
-        border: "2px solid white",
-        background: buttonBackground,
-      }}
-      onClick={handleClick}
-      onMouseOver={handleMouseOver}
-      onMouseOut={handleMouseOut}
-    >
-      {title}
-    </button>
-  );
-}
-
-function SearchButton() {
-  return <NavBarButton title={"Search"} className={"btn mx-1"} />;
-}
-
 //WHEN CLICKED, VIEW THE ITEMS INSIDE THE CART
 
-function ViewCartButton({ cartItems, removeItemFromCart }) {
+function ViewCart({ cartItems, removeItemFromCart }) {
   const [visibility, setVisibility] = useState("none");
   const [totalCheckoutPrice, setTotalCheckoutPrice] = useState(0);
 
@@ -185,6 +105,8 @@ function ViewCartButton({ cartItems, removeItemFromCart }) {
         handleClick={handleClick}
         title={"View your cart"}
         className={"btn mx-5"}
+        color={"white"}
+        hoverColor={"#8B9A61"}
       />
       <CartList
         cartItemsLength={cartItems.length}
@@ -218,13 +140,14 @@ function CartList({
   const cartListDivStyle = {
     display: visibility,
     height: "100vh",
-    position: "absolute",
+    position: "fixed",
     right: "0",
     top: "0",
     zIndex: "1",
     backgroundColor: "white",
     boxShadow: "0px 100px 100px rgba(0, 0, 0, 0.5)",
     overflowY: "auto",
+    color: "#adc178",
   };
 
   const cartListTitleStyle = {

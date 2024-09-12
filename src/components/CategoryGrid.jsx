@@ -32,15 +32,15 @@ const categories = [
   },
 ];
 
-export default function CategoryGrid({ filterStoreProducts }) {
+export default function CategoryGrid({ searched, filterStoreProducts}) {
   const [hoveredIndex, setHoveredIndex] = useState(-1);
   const [background, setBackground] = useState(defaultBackgroundImg);
   const [categorySelectedBackground, setCategorySelectedBackground] =
     useState(null);
 
   const imageStyle = (isHovered) => ({
-    width: "140px", 
-    height: "140px", 
+    width: "140px",
+    height: "140px",
     objectFit: "cover",
     borderRadius: "50%",
     transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
@@ -57,10 +57,11 @@ export default function CategoryGrid({ filterStoreProducts }) {
       backgroundRepeat: isSmallScreen ? "none" : "no-repeat",
       backgroundSize: isSmallScreen ? "none" : "contain",
       // Apply transitions only on larger screens
-      transition: isSmallScreen ? "none" : "background-image 0.5s ease-in-out, opacity 0.5s ease-in-out",
+      transition: isSmallScreen
+        ? "none"
+        : "background-image 0.5s ease-in-out, opacity 0.5s ease-in-out",
     };
   };
-  
 
   function handleMouseOver(index) {
     setHoveredIndex(index);
@@ -81,44 +82,67 @@ export default function CategoryGrid({ filterStoreProducts }) {
 
   return (
     <>
-      <div className="mb-5">
-        <div className="p-5 text-center" style={backgroundStyle(background)}>
-          <div className="container p-1">
-            <div
-              className="row"
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              {categories.map((category, index) => {
-                return (
-                  <div
-                    key={index}
-                    className="col-lg-2 col-md-3 col-sm-4"
-                    onMouseOver={() => {
-                      handleMouseOver(index);
-                    }}
-                    onMouseOut={handleMouseOut}
-                    onClick={() => {
-                      handleClick(index);
-                    }}
-                  >
-                    <img
-                      
-                      style={imageStyle(hoveredIndex === index)}
-                      alt={category.categoryName + "category"}
-                      src={category.categoryImgURL}
-                    />
-                    <h4 className="fw-normal mt-2">{category.categoryName}</h4>
-                  </div>
-                );
-              })}
+      {!searched ? (
+        <div className="mb-5">
+          <div className="p-5 text-center" style={backgroundStyle(background)}>
+            <div className="container p-1">
+              <div
+                className="row"
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                {categories.map((category, index) => {
+                  return (
+                    <div
+                      key={index}
+                      className="col-lg-2 col-md-3 col-sm-4"
+                      onMouseOver={() => {
+                        handleMouseOver(index);
+                      }}
+                      onMouseOut={handleMouseOut}
+                      onClick={() => {
+                        handleClick(index);
+                      }}
+                    >
+                      <img
+                        style={imageStyle(hoveredIndex === index)}
+                        alt={category.categoryName + "category"}
+                        src={category.categoryImgURL}
+                      />
+                      <h4 className="fw-normal mt-2">
+                        {category.categoryName}
+                      </h4>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <h4 className="mt-4 mx-5" style={{ color: "#7C8B54" }}>
+          <svg
+            class="w-6 h-6 text-gray-800 dark:text-white me-2"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-width="2"
+              d="m21 21-3.5-3.5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+            />
+          </svg>
+          Results for "{searched}"
+        </h4>
+      )}
     </>
   );
 }

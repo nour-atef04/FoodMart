@@ -23,7 +23,7 @@ export default function Card({
           objectFit: "cover",
         }}
       />
-      <div className="card-body">
+      <div className="card-body" style={{color: "#58473C"}}>
         <h5 className="card-title">{storeProductName}</h5>
         <h5 className="card-text">${storeProductPrice}</h5>
 
@@ -118,6 +118,7 @@ function QuantitySetter({ decrementQuantity, incrementQuantity, quantity }) {
           fill="currentColor"
           className="bi bi-dash-lg"
           viewBox="0 0 30 30"
+          style={{color:"#382E28"}}
         >
           <path
             fillRule="evenodd"
@@ -142,6 +143,7 @@ function QuantitySetter({ decrementQuantity, incrementQuantity, quantity }) {
           fill="currentColor"
           className="bi bi-plus-lg"
           viewBox="0 0 30 30"
+          style={{color:"#382E28"}}
         >
           <path
             fillRule="evenodd"

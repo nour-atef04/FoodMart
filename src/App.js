@@ -3,6 +3,10 @@ import CardGrid from "./components/CardGrid";
 import Card from "./components/Card";
 import NavBar from "./components/NavBar";
 import CategoryGrid from "./components/CategoryGrid";
+import Footer from "./components/Footer";
+import SearchBar from "./components/SearchBar";
+import Title from "./components/Title";
+import SortProductsButtons from "./components/SortProductsButtons";
 
 // AVAILABLE STORE PRODUCTS
 const storeProducts = [
@@ -49,15 +53,14 @@ const storeProducts = [
 ];
 
 function App() {
-  // ITEMS ADDED TO THE CART BY USER
   const [cartItems, setCartItems] = useState([]);
+  const [productsToDisplay, setProductsToDisplay] = useState(storeProducts); // Products currently displayed
+  const [backupProducts, setBackupProducts] = useState([...storeProducts]); // Backup for unsorting
 
   function addItemToCart(id, itemQuantity) {
-    // SEARCH FIRST IF THE PRODUCT IS ALREADY IN THE CART
     const existingProduct = cartItems.find((item) => item.productId === id);
 
     if (existingProduct) {
-      // UPDATE QUANTITY IF ITEM EXISTS
       setCartItems((prevItems) =>
         prevItems.map((item) =>
           item.productId === id
@@ -71,7 +74,6 @@ function App() {
         )
       );
     } else {
-      // ADD NEW ITEM TO THE CART
       const productToAdd = storeProducts.find(
         (product) => product.productId === id
       );
@@ -85,55 +87,90 @@ function App() {
     }
   }
 
-  // REMOVE ITEMS SELECTED BY USER FROM CART
   function removeItemFromCart(cartItemId) {
     setCartItems((prevItems) =>
       prevItems.filter((_, index) => index !== cartItemId)
     );
   }
 
-  // FILTER THE STORE PRODUCTS BY CATEGORY CHOSEN BY THE USER
-
-  const [filteredStoreProducts, setFilteredStoreProducts] = useState(null);
-
   function filterStoreProducts(category) {
-    setFilteredStoreProducts(
-      storeProducts.filter(
-        (storeProduct) => storeProduct.productCategory === category
-      )
+    setSearched(false);
+    const filteredProducts = storeProducts.filter(
+      (storeProduct) => storeProduct.productCategory === category
     );
+    setProductsToDisplay(filteredProducts);
+    setBackupProducts(filteredProducts);
+  }
+
+  const [searched, setSearched] = useState(null);
+
+  function searchStoreProducts(search) {
+    if (search) {
+      setSearched(search);
+      const searchedProducts = storeProducts.filter(
+        (storeProduct) =>
+          storeProduct.productCategory.toLowerCase() === search.toLowerCase() ||
+          storeProduct.productName.toLowerCase() === search.toLowerCase()
+      );
+      setProductsToDisplay(searchedProducts);
+      setBackupProducts(searchedProducts);
+    }
+  }
+
+  // SORT PRODUCTS BY USER'S CHOICE
+  function unsortProducts() {
+    setProductsToDisplay([...backupProducts]);
+  }
+
+  function sortPricesHighToLow() {
+    const sortedProducts = [...productsToDisplay].sort(
+      (a, b) => b.productPrice - a.productPrice
+    );
+    setProductsToDisplay(sortedProducts);
+  }
+
+  function sortPricesLowToHigh() {
+    const sortedProducts = [...productsToDisplay].sort(
+      (a, b) => a.productPrice - b.productPrice
+    );
+    setProductsToDisplay(sortedProducts);
   }
 
   return (
     <div>
-      <NavBar cartItems={cartItems} removeItemFromCart={removeItemFromCart} />
-      <CategoryGrid filterStoreProducts={filterStoreProducts} />
+      <NavBar cartItems={cartItems} removeItemFromCart={removeItemFromCart}>
+        <SearchBar searchStoreProducts={searchStoreProducts} />
+        <Title
+          handleTitleClick={() => {
+            setSearched(false);
+            setProductsToDisplay(storeProducts);
+            setBackupProducts(storeProducts);
+          }}
+        />
+      </NavBar>
+      <CategoryGrid
+        searched={searched}
+        filterStoreProducts={filterStoreProducts}
+      />
+      <SortProductsButtons
+        unsortProducts={unsortProducts}
+        sortPricesLowToHigh={sortPricesLowToHigh}
+        sortPricesHighToLow={sortPricesHighToLow}
+      />
       <CardGrid storeProducts={storeProducts}>
-        {/* CREATE A CARD FOR EACH STORE ITEM */}
-        {filteredStoreProducts
-          ? filteredStoreProducts.map((storeProduct, index) => (
-              <div className="col" key={index}>
-                <Card
-                  storeProductId={storeProduct.productId}
-                  storeProductImg={storeProduct.productImg}
-                  storeProductName={storeProduct.productName}
-                  storeProductPrice={storeProduct.productPrice}
-                  addItemToCart={addItemToCart}
-                />
-              </div>
-            ))
-          : storeProducts.map((storeProduct, index) => (
-              <div className="col" key={index}>
-                <Card
-                  storeProductId={storeProduct.productId}
-                  storeProductImg={storeProduct.productImg}
-                  storeProductName={storeProduct.productName}
-                  storeProductPrice={storeProduct.productPrice}
-                  addItemToCart={addItemToCart}
-                />
-              </div>
-            ))}
+        {productsToDisplay.map((storeProduct, index) => (
+          <div className="col" key={index}>
+            <Card
+              storeProductId={storeProduct.productId}
+              storeProductImg={storeProduct.productImg}
+              storeProductName={storeProduct.productName}
+              storeProductPrice={storeProduct.productPrice}
+              addItemToCart={addItemToCart}
+            />
+          </div>
+        ))}
       </CardGrid>
+      <Footer />
     </div>
   );
 }
