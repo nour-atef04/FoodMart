@@ -8,7 +8,7 @@ export default function NavBarButton({
     dataBsTarget,
     ariaLabel,
     color,
-    hoverColor
+    hoverColor,
   }) {
     const [buttonBackground, setButtonBackground] = useState("transparent");
   

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CardGrid from "./components/CardGrid";
 import Card from "./components/Card";
 import NavBar from "./components/NavBar";
@@ -7,82 +7,48 @@ import Footer from "./components/Footer";
 import SearchBar from "./components/SearchBar";
 import Title from "./components/Title";
 import SortProductsButtons from "./components/SortProductsButtons";
-
-// AVAILABLE STORE PRODUCTS
-const storeProducts = [
-  {
-    productId: 1,
-    productImg:
-      "https://www.goodfruit.com/wp-content/uploads/snowflakeApple.jpg",
-    productName: "Red Apples",
-    productPrice: "19.00",
-    productCategory: "Fruits",
-  },
-  {
-    productId: 2,
-    productImg:
-      "https://media.istockphoto.com/id/1184345169/photo/banana.jpg?s=612x612&w=0&k=20&c=NdHyi6Jd9y1855Q5mLO2tV_ZRnaJGtZGCSMMT7oxdF4=",
-    productName: "Bananas",
-    productPrice: "24.00",
-    productCategory: "Fruits",
-  },
-  {
-    productId: 3,
-    productImg:
-      "https://st2.depositphotos.com/16122460/42446/i/450/depositphotos_424463870-stock-photo-jug-glass-fresh-milk-white.jpg",
-    productName: "Milk",
-    productPrice: "15.50",
-    productCategory: "Dairy",
-  },
-  {
-    productId: 4,
-    productImg:
-      "https://farmfreshontario.com/wp-content/uploads/2019/12/p9.jpg",
-    productName: "Carrots",
-    productPrice: "2.00",
-    productCategory: "Vegetables",
-  },
-  {
-    productId: 5,
-    productImg:
-      "https://img.freepik.com/premium-photo/potato-chips-white-background_55883-8452.jpg",
-    productName: "Chips",
-    productPrice: "5.50",
-    productCategory: "Snacks",
-  },
-];
+import useStoreProducts from "./hooks/useStoreProducts";
 
 function App() {
+  const { storeProducts, loading, error } = useStoreProducts();
   const [cartItems, setCartItems] = useState([]);
   const [productsToDisplay, setProductsToDisplay] = useState(storeProducts); // Products currently displayed
-  const [backupProducts, setBackupProducts] = useState([...storeProducts]); // Backup for unsorting
+  const [backupProducts, setBackupProducts] = useState(storeProducts); // Backup for unsorting
+
+  useEffect(() => {
+    if (storeProducts.length > 0) {
+      setProductsToDisplay(storeProducts);
+      setBackupProducts(storeProducts);
+    }
+  }, [storeProducts]);
+
 
   function addItemToCart(id, itemQuantity) {
-    const existingProduct = cartItems.find((item) => item.productId === id);
+    const existingProduct = cartItems.find((item) => item.product_id === id);
 
     if (existingProduct) {
       setCartItems((prevItems) =>
         prevItems.map((item) =>
-          item.productId === id
+          item.product_id === id
             ? {
                 ...item,
                 itemQuantity: item.itemQuantity + itemQuantity,
                 totalItemPrice:
-                  (item.itemQuantity + itemQuantity) * item.productPrice,
+                  (item.itemQuantity + itemQuantity) * item.product_price,
               }
             : item
         )
       );
     } else {
       const productToAdd = storeProducts.find(
-        (product) => product.productId === id
+        (product) => product.product_id === id
       );
+      
       const newItem = {
         ...productToAdd,
         itemQuantity,
-        totalItemPrice: productToAdd.productPrice * itemQuantity,
+        totalItemPrice: productToAdd.product_price * itemQuantity,
       };
-
       setCartItems((prevItems) => [...prevItems, newItem]);
     }
   }
@@ -96,7 +62,7 @@ function App() {
   function filterStoreProducts(category) {
     setSearched(false);
     const filteredProducts = storeProducts.filter(
-      (storeProduct) => storeProduct.productCategory === category
+      (storeProduct) => storeProduct.product_category === category
     );
     setProductsToDisplay(filteredProducts);
     setBackupProducts(filteredProducts);
@@ -109,8 +75,9 @@ function App() {
       setSearched(search);
       const searchedProducts = storeProducts.filter(
         (storeProduct) =>
-          storeProduct.productCategory.toLowerCase() === search.toLowerCase() ||
-          storeProduct.productName.toLowerCase() === search.toLowerCase()
+          storeProduct.product_category.toLowerCase() ===
+            search.toLowerCase() ||
+          storeProduct.product_name.toLowerCase() === search.toLowerCase()
       );
       setProductsToDisplay(searchedProducts);
       setBackupProducts(searchedProducts);
@@ -124,14 +91,14 @@ function App() {
 
   function sortPricesHighToLow() {
     const sortedProducts = [...productsToDisplay].sort(
-      (a, b) => b.productPrice - a.productPrice
+      (a, b) => b.product_price - a.product_price
     );
     setProductsToDisplay(sortedProducts);
   }
 
   function sortPricesLowToHigh() {
     const sortedProducts = [...productsToDisplay].sort(
-      (a, b) => a.productPrice - b.productPrice
+      (a, b) => a.product_price - b.product_price
     );
     setProductsToDisplay(sortedProducts);
   }
@@ -161,10 +128,10 @@ function App() {
         {productsToDisplay.map((storeProduct, index) => (
           <div className="col" key={index}>
             <Card
-              storeProductId={storeProduct.productId}
-              storeProductImg={storeProduct.productImg}
-              storeProductName={storeProduct.productName}
-              storeProductPrice={storeProduct.productPrice}
+              storeProductId={storeProduct.product_id}
+              storeProductImg={storeProduct.product_img}
+              storeProductName={storeProduct.product_name}
+              storeProductPrice={storeProduct.product_price}
               addItemToCart={addItemToCart}
             />
           </div>

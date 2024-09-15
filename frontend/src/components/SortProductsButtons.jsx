@@ -13,7 +13,9 @@ export default function SortProductsButtons({
         hoverColor={"#dde5b6"}
         className={"btn ms-5"}
         title={"Prices high to low"}
-        handleClick={sortPricesHighToLow}
+        handleClick={() => {
+          sortPricesHighToLow();
+        }}
       />
       <SortButton
         color={"#58473C"}

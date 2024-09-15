@@ -57,23 +57,6 @@ export default function NavBar({ cartItems, removeItemFromCart, children }) {
           </div>
         </div>
       </nav>
-
-      {/* <nav className="navbar py-0">
-        <div
-          style={{
-            backgroundColor: "#adc178",
-            backgroundImage: `url(${backgroundImg})`,
-          }}
-          className="container-fluid py-3"
-        >
-          <Title />
-          <SearchBar />
-          <ViewCartButton
-            cartItems={cartItems}
-            removeItemFromCart={removeItem}
-          />
-        </div>
-      </nav> */}
     </>
   );
 }
@@ -118,8 +101,8 @@ function ViewCart({ cartItems, removeItemFromCart }) {
           <CardListItem
             key={index}
             cartItemId={index}
-            cartItemImg={cartItem.productImg}
-            cartItemName={cartItem.productName}
+            cartItemImg={cartItem.product_img}
+            cartItemName={cartItem.product_name}
             cartItemQuantity={cartItem.itemQuantity}
             cartItemTotalPrice={cartItem.totalItemPrice}
             removeItemFromCart={removeItemFromCart}
