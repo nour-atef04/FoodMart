@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useReducer } from "react";
 import CardGrid from "./components/CardGrid";
 import Card from "./components/Card";
 import NavBar from "./components/NavBar";
@@ -9,11 +9,43 @@ import Title from "./components/Title";
 import SortProductsButtons from "./components/SortProductsButtons";
 import useStoreProducts from "./hooks/useStoreProducts";
 
+// REDUCER FUNCTION FOR CART ITEMS
+const cartReducer = (state, action) => {
+  switch (action.type) {
+
+    case "addItem":
+      const existingProduct = state.find(
+        (item) => item.product_id === action.payLoad.product_id
+      );
+      if (existingProduct) {
+        return state.map((item) =>
+          item.product_id === action.payLoad.product_id
+            ? {
+                ...item,
+                itemQuantity: item.itemQuantity + action.payLoad.itemQuantity,
+                totalItemPrice:
+                  (item.itemQuantity + action.payLoad.itemQuantity) *
+                  item.product_price,
+              }
+            : item
+        );
+      }
+      return [...state, action.payLoad];
+
+    case "removeItem":
+      return state.filter((_, index) => index !== action.payLoad);
+    default:
+      return new Error("unknown operation!");
+  }
+};
+
 function App() {
-  const { storeProducts, loading, error } = useStoreProducts();
-  const [cartItems, setCartItems] = useState([]);
-  const [productsToDisplay, setProductsToDisplay] = useState(storeProducts); // Products currently displayed
-  const [backupProducts, setBackupProducts] = useState(storeProducts); // Backup for unsorting
+  const { storeProducts } = useStoreProducts(); // CUSTOM HOOK TO GET STORE PRODUCTS FROM DATABASE
+  const [productsToDisplay, setProductsToDisplay] = useState(storeProducts); // PRODUCTS CURRENTLY IN DISPLAY
+  const [backupProducts, setBackupProducts] = useState(storeProducts); // BACKUP FOR UNSORTING
+  const [searched, setSearched] = useState(null);
+
+  const [cartItems, cartDispatch] = useReducer(cartReducer, []); 
 
   useEffect(() => {
     if (storeProducts.length > 0) {
@@ -22,43 +54,27 @@ function App() {
     }
   }, [storeProducts]);
 
-
+  // HANDLING CART ITEMS
   function addItemToCart(id, itemQuantity) {
-    const existingProduct = cartItems.find((item) => item.product_id === id);
-
-    if (existingProduct) {
-      setCartItems((prevItems) =>
-        prevItems.map((item) =>
-          item.product_id === id
-            ? {
-                ...item,
-                itemQuantity: item.itemQuantity + itemQuantity,
-                totalItemPrice:
-                  (item.itemQuantity + itemQuantity) * item.product_price,
-              }
-            : item
-        )
-      );
-    } else {
-      const productToAdd = storeProducts.find(
-        (product) => product.product_id === id
-      );
-      
+    const productToAdd = storeProducts.find(
+      (product) => product.product_id === id
+    );
+    if (productToAdd) {
       const newItem = {
         ...productToAdd,
         itemQuantity,
         totalItemPrice: productToAdd.product_price * itemQuantity,
       };
-      setCartItems((prevItems) => [...prevItems, newItem]);
+      cartDispatch({ type: "addItem", payLoad: newItem });
     }
+
   }
 
   function removeItemFromCart(cartItemId) {
-    setCartItems((prevItems) =>
-      prevItems.filter((_, index) => index !== cartItemId)
-    );
+    cartDispatch({ type: "removeItem", payLoad: cartItemId });
   }
 
+  //FILTER AND SEARCHING
   function filterStoreProducts(category) {
     setSearched(false);
     const filteredProducts = storeProducts.filter(
@@ -67,8 +83,6 @@ function App() {
     setProductsToDisplay(filteredProducts);
     setBackupProducts(filteredProducts);
   }
-
-  const [searched, setSearched] = useState(null);
 
   function searchStoreProducts(search) {
     if (search) {
