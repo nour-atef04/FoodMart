@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useReducer } from "react";
+import React, { useEffect, useReducer } from "react";
 import CardGrid from "./components/CardGrid";
 import Card from "./components/Card";
 import NavBar from "./components/NavBar";
@@ -12,7 +12,6 @@ import useStoreProducts from "./hooks/useStoreProducts";
 // REDUCER FUNCTION FOR CART ITEMS
 const cartReducer = (state, action) => {
   switch (action.type) {
-
     case "addItem":
       const existingProduct = state.find(
         (item) => item.product_id === action.payLoad.product_id
@@ -39,18 +38,61 @@ const cartReducer = (state, action) => {
   }
 };
 
+// REDUCER FUNCTION FOR PRODUCTS DISPLAYED
+const productsReducer = (state, action) => {
+  switch (action.type) {
+    case "setProducts":
+      return {
+        ...state,
+        productsToDisplay: action.payLoad,
+        backupProducts: action.payLoad,
+        searched: null,
+      };
+    case "filterProducts":
+      return {
+        ...state,
+        productsToDisplay: action.payLoad,
+        backupProducts: action.payLoad,
+        searched: false,
+      };
+    case "searchProducts":
+      return {
+        ...state,
+        productsToDisplay: action.payLoad,
+        backupProducts: action.payLoad,
+        searched: action.search,
+      };
+    case "sortProducts":
+      return {
+        ...state,
+        productsToDisplay: action.payLoad,
+      };
+    case "unsortProducts":
+      return {
+        ...state,
+        productsToDisplay: state.backupProducts,
+      };
+    default:
+      return new Error("unknown operation!");
+  }
+};
+
 function App() {
   const { storeProducts } = useStoreProducts(); // CUSTOM HOOK TO GET STORE PRODUCTS FROM DATABASE
-  const [productsToDisplay, setProductsToDisplay] = useState(storeProducts); // PRODUCTS CURRENTLY IN DISPLAY
-  const [backupProducts, setBackupProducts] = useState(storeProducts); // BACKUP FOR UNSORTING
-  const [searched, setSearched] = useState(null);
+  const [cartItems, cartDispatch] = useReducer(cartReducer, []);
+  const [{ productsToDisplay, searched }, productsDispatch] = useReducer(
+    productsReducer,
+    {
+      productsToDisplay: storeProducts, // PRODUCTS CURRENTLY IN DISPLAY
+      backupProducts: storeProducts, // BACKUP FOR UNSORTING
+      searched: null, // CHECK IF USER ENTERED IN SEARCH
+    }
+  );
 
-  const [cartItems, cartDispatch] = useReducer(cartReducer, []); 
-
+  // LOAD ALL STORE PRODUCTS
   useEffect(() => {
     if (storeProducts.length > 0) {
-      setProductsToDisplay(storeProducts);
-      setBackupProducts(storeProducts);
+      productsDispatch({ type: "setProducts", payLoad: storeProducts });
     }
   }, [storeProducts]);
 
@@ -67,7 +109,6 @@ function App() {
       };
       cartDispatch({ type: "addItem", payLoad: newItem });
     }
-
   }
 
   function removeItemFromCart(cartItemId) {
@@ -76,45 +117,46 @@ function App() {
 
   //FILTER AND SEARCHING
   function filterStoreProducts(category) {
-    setSearched(false);
     const filteredProducts = storeProducts.filter(
       (storeProduct) => storeProduct.product_category === category
     );
-    setProductsToDisplay(filteredProducts);
-    setBackupProducts(filteredProducts);
+
+    productsDispatch({ type: "filterProducts", payLoad: filteredProducts });
   }
 
   function searchStoreProducts(search) {
     if (search) {
-      setSearched(search);
       const searchedProducts = storeProducts.filter(
         (storeProduct) =>
           storeProduct.product_category.toLowerCase() ===
             search.toLowerCase() ||
           storeProduct.product_name.toLowerCase() === search.toLowerCase()
       );
-      setProductsToDisplay(searchedProducts);
-      setBackupProducts(searchedProducts);
+      productsDispatch({
+        type: "searchProducts",
+        payLoad: searchedProducts,
+        search,
+      });
     }
   }
 
   // SORT PRODUCTS BY USER'S CHOICE
   function unsortProducts() {
-    setProductsToDisplay([...backupProducts]);
+    productsDispatch({ type: "unsortProducts" });
   }
 
   function sortPricesHighToLow() {
     const sortedProducts = [...productsToDisplay].sort(
       (a, b) => b.product_price - a.product_price
     );
-    setProductsToDisplay(sortedProducts);
+    productsDispatch({ type: "sortProducts", payLoad: sortedProducts });
   }
 
   function sortPricesLowToHigh() {
     const sortedProducts = [...productsToDisplay].sort(
       (a, b) => a.product_price - b.product_price
     );
-    setProductsToDisplay(sortedProducts);
+    productsDispatch({ type: "sortProducts", payLoad: sortedProducts });
   }
 
   return (
@@ -123,9 +165,7 @@ function App() {
         <SearchBar searchStoreProducts={searchStoreProducts} />
         <Title
           handleTitleClick={() => {
-            setSearched(false);
-            setProductsToDisplay(storeProducts);
-            setBackupProducts(storeProducts);
+            productsDispatch({ type: "setProducts", payLoad: storeProducts });
           }}
         />
       </NavBar>
