@@ -8,10 +8,13 @@ import SearchBar from "./components/SearchBar";
 import Title from "./components/Title";
 import SortProductsButtons from "./components/SortProductsButtons";
 import useStoreProducts from "./hooks/useStoreProducts";
+import useCartItems from "./hooks/useCartItems";
 
 // REDUCER FUNCTION FOR CART ITEMS
 const cartReducer = (state, action) => {
   switch (action.type) {
+    case "setCartItems":
+      return action.payLoad;
     case "addItem":
       const existingProduct = state.find(
         (item) => item.product_id === action.payLoad.product_id
@@ -21,9 +24,9 @@ const cartReducer = (state, action) => {
           item.product_id === action.payLoad.product_id
             ? {
                 ...item,
-                itemQuantity: item.itemQuantity + action.payLoad.itemQuantity,
-                totalItemPrice:
-                  (item.itemQuantity + action.payLoad.itemQuantity) *
+                item_quantity: item.item_quantity + action.payLoad.item_quantity,
+                total_item_price:
+                  (item.item_quantity + action.payLoad.item_quantity) *
                   item.product_price,
               }
             : item
@@ -32,7 +35,7 @@ const cartReducer = (state, action) => {
       return [...state, action.payLoad];
 
     case "removeItem":
-      return state.filter((_, index) => index !== action.payLoad);
+      return state.filter((item) => item.product_id !== action.payLoad);
     default:
       return new Error("unknown operation!");
   }
@@ -79,7 +82,9 @@ const productsReducer = (state, action) => {
 
 function App() {
   const { storeProducts } = useStoreProducts(); // CUSTOM HOOK TO GET STORE PRODUCTS FROM DATABASE
-  const [cartItems, cartDispatch] = useReducer(cartReducer, []);
+  const { fetchedCartItems } = useCartItems();
+
+  const [cartItems, cartDispatch] = useReducer(cartReducer, fetchedCartItems);
   const [{ productsToDisplay, searched }, productsDispatch] = useReducer(
     productsReducer,
     {
@@ -96,6 +101,13 @@ function App() {
     }
   }, [storeProducts]);
 
+  // LOAD ALL CART ITEMS
+  useEffect(() => {
+    if (fetchedCartItems.length > 0) {
+      cartDispatch({ type: "setCartItems", payLoad: fetchedCartItems });
+    }
+  }, [fetchedCartItems]);
+
   // HANDLING CART ITEMS
   function addItemToCart(id, itemQuantity) {
     const productToAdd = storeProducts.find(
@@ -104,8 +116,8 @@ function App() {
     if (productToAdd) {
       const newItem = {
         ...productToAdd,
-        itemQuantity,
-        totalItemPrice: productToAdd.product_price * itemQuantity,
+        item_quantity : itemQuantity,
+        total_item_price: productToAdd.product_price * itemQuantity,
       };
       cartDispatch({ type: "addItem", payLoad: newItem });
     }

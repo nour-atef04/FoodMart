@@ -20,11 +20,21 @@ const db = new pg.Client({
 });
 db.connect();
 
-// GET all store products
+// GET ALL STORE PRODUCTS
 app.get("/api/storeProducts", async (req, res) => {
   try {
     const result = await db.query("SELECT * FROM store_products");
-    res.status(200).json(result.rows); // Return all products
+    res.status(200).json(result.rows); // RETURN ALL STORE PRODUCTS
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+//GET ALL CART ITEMS
+app.get("/api/cartItems", async (req, res) => {
+  try {
+    const result = await db.query("SELECT * FROM cart_items");
+    res.status(200).json(result.rows); // RETURN ALL CART ITEMS
   } catch (error) {
     res.status(500).send(error.message);
   }

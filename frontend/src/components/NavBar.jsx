@@ -73,7 +73,7 @@ function ViewCart({ cartItems, removeItemFromCart }) {
 
   function calculateCheckoutPrice() {
     const totalPrice = cartItems.reduce((accumulator, item) => {
-      return accumulator + item.totalItemPrice;
+      return accumulator + Number(item.total_item_price);
     }, 0);
     setTotalCheckoutPrice(totalPrice);
   }
@@ -100,11 +100,11 @@ function ViewCart({ cartItems, removeItemFromCart }) {
         {cartItems.map((cartItem, index) => (
           <CardListItem
             key={index}
-            cartItemId={index}
+            cartItemId={cartItem.product_id}
             cartItemImg={cartItem.product_img}
             cartItemName={cartItem.product_name}
-            cartItemQuantity={cartItem.itemQuantity}
-            cartItemTotalPrice={cartItem.totalItemPrice}
+            cartItemQuantity={cartItem.item_quantity}
+            cartItemTotalPrice={cartItem.total_item_price}
             removeItemFromCart={removeItemFromCart}
           />
         ))}
