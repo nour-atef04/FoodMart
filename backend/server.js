@@ -30,13 +30,75 @@ app.get("/api/storeProducts", async (req, res) => {
   }
 });
 
-//GET ALL CART ITEMS
+// GET ALL CART ITEMS
 app.get("/api/cartItems", async (req, res) => {
   try {
     const result = await db.query("SELECT * FROM cart_items");
     res.status(200).json(result.rows); // RETURN ALL CART ITEMS
   } catch (error) {
     res.status(500).send(error.message);
+  }
+});
+
+// POST NEW CART ITEM OR UPDATE IF EXISTS
+app.post("/api/cartItems", async (req, res) => {
+  const {
+    product_id,
+    product_img,
+    product_name,
+    product_price,
+    product_category,
+    item_quantity,
+    total_item_price,
+  } = req.body;
+  try {
+    const existingItem = await db.query(
+      "SELECT * FROM cart_items WHERE product_id = $1",
+      [product_id]
+    );
+
+    if (existingItem.rows.length > 0) {
+
+      const currentQuantity = parseInt(existingItem.rows[0].item_quantity, 10);
+      const currentTotalPrice = parseFloat(
+        existingItem.rows[0].total_item_price
+      );
+      const new_item_quantity = currentQuantity + item_quantity;
+      const new_total_item_price = currentTotalPrice + total_item_price;
+
+      // Update the existing item
+      await db.query(
+        "UPDATE cart_items SET item_quantity = $1, total_item_price = $2 WHERE product_id = $3",
+        [new_item_quantity, new_total_item_price, product_id]
+      );
+    }
+    // Add new item if no existing item with same id
+    else {
+      await db.query(
+        "INSERT INTO cart_items (product_id, product_img, product_name, product_price, product_category, item_quantity, total_item_price) VALUES($1, $2, $3, $4, $5, $6, $7)",
+        [
+          product_id,
+          product_img,
+          product_name,
+          product_price,
+          product_category,
+          item_quantity,
+          total_item_price,
+        ]
+      );
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+// DELETE CART ITEM
+app.delete("/api/cartItems/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query("DELETE FROM cart_items WHERE product_id = " + id);
+  } catch (error) {
+    console.log(error);
   }
 });
 

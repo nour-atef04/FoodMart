@@ -1,4 +1,5 @@
 import React, { useEffect, useReducer } from "react";
+import axios from "axios";
 import CardGrid from "./components/CardGrid";
 import Card from "./components/Card";
 import NavBar from "./components/NavBar";
@@ -32,6 +33,7 @@ const cartReducer = (state, action) => {
             : item
         );
       }
+
       return [...state, action.payLoad];
 
     case "removeItem":
@@ -109,7 +111,7 @@ function App() {
   }, [fetchedCartItems]);
 
   // HANDLING CART ITEMS
-  function addItemToCart(id, itemQuantity) {
+  async function addItemToCart(id, itemQuantity) {
     const productToAdd = storeProducts.find(
       (product) => product.product_id === id
     );
@@ -119,12 +121,27 @@ function App() {
         item_quantity : itemQuantity,
         total_item_price: productToAdd.product_price * itemQuantity,
       };
+
       cartDispatch({ type: "addItem", payLoad: newItem });
+
+      try{
+        await axios.post("http://localhost:5000/api/cartItems", newItem);
+        console.log("Saved to database successfully!");
+      }
+      catch(error){
+        console.error("Error saving item to cart database: ", error);
+      }
     }
   }
 
-  function removeItemFromCart(cartItemId) {
+  async function removeItemFromCart(cartItemId) {
     cartDispatch({ type: "removeItem", payLoad: cartItemId });
+    try{
+      await axios.delete(`http://localhost:5000/api/cartItems/${cartItemId}`);
+    }
+    catch(error){
+      console.error("Error deleting item from cart database: ", error);
+    }
   }
 
   //FILTER AND SEARCHING

@@ -102,7 +102,13 @@ function ViewCart({ cartItems, removeItemFromCart }) {
             key={index}
             cartItemId={cartItem.product_id}
             cartItemImg={cartItem.product_img}
+            // cartItemImg={cartItems.find((item) => {
+            //   return cartItem.product_id === item.product_id;
+            // }).product_img}
             cartItemName={cartItem.product_name}
+            // cartItemName={cartItems.find((item) => {
+            //   return cartItem.product_id === item.product_id;
+            // }).product_name}
             cartItemQuantity={cartItem.item_quantity}
             cartItemTotalPrice={cartItem.total_item_price}
             removeItemFromCart={removeItemFromCart}
