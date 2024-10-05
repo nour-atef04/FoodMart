@@ -33,7 +33,19 @@ app.get("/api/storeProducts", async (req, res) => {
 // GET ALL CART ITEMS
 app.get("/api/cartItems", async (req, res) => {
   try {
-    const result = await db.query("SELECT * FROM cart_items");
+    const result = await db.query(`SELECT 
+        cart_items.product_id,
+        store_products.product_img,
+        store_products.product_name,
+        store_products.product_price,
+        cart_items.item_quantity,
+        cart_items.total_item_price
+      FROM 
+        cart_items
+      JOIN 
+        store_products
+      ON 
+        cart_items.product_id = store_products.product_id`);
     res.status(200).json(result.rows); // RETURN ALL CART ITEMS
   } catch (error) {
     res.status(500).send(error.message);
@@ -42,15 +54,7 @@ app.get("/api/cartItems", async (req, res) => {
 
 // POST NEW CART ITEM OR UPDATE IF EXISTS
 app.post("/api/cartItems", async (req, res) => {
-  const {
-    product_id,
-    product_img,
-    product_name,
-    product_price,
-    product_category,
-    item_quantity,
-    total_item_price,
-  } = req.body;
+  const { product_id, item_quantity, total_item_price } = req.body;
   try {
     const existingItem = await db.query(
       "SELECT * FROM cart_items WHERE product_id = $1",
@@ -58,7 +62,6 @@ app.post("/api/cartItems", async (req, res) => {
     );
 
     if (existingItem.rows.length > 0) {
-
       const currentQuantity = parseInt(existingItem.rows[0].item_quantity, 10);
       const currentTotalPrice = parseFloat(
         existingItem.rows[0].total_item_price
@@ -75,16 +78,8 @@ app.post("/api/cartItems", async (req, res) => {
     // Add new item if no existing item with same id
     else {
       await db.query(
-        "INSERT INTO cart_items (product_id, product_img, product_name, product_price, product_category, item_quantity, total_item_price) VALUES($1, $2, $3, $4, $5, $6, $7)",
-        [
-          product_id,
-          product_img,
-          product_name,
-          product_price,
-          product_category,
-          item_quantity,
-          total_item_price,
-        ]
+        "INSERT INTO cart_items (product_id, item_quantity, total_item_price) VALUES($1, $2, $3)",
+        [product_id, item_quantity, total_item_price]
       );
     }
   } catch (error) {

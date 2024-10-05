@@ -107,6 +107,7 @@ function App() {
   useEffect(() => {
     if (fetchedCartItems.length > 0) {
       cartDispatch({ type: "setCartItems", payLoad: fetchedCartItems });
+      console.log(cartItems);
     }
   }, [fetchedCartItems]);
 
@@ -116,8 +117,16 @@ function App() {
       (product) => product.product_id === id
     );
     if (productToAdd) {
+
+      const product_img = productToAdd.product_img;
+      const product_name = productToAdd.product_name;
+      const product_price = productToAdd.product_price;
+
       const newItem = {
-        ...productToAdd,
+        product_img,
+        product_name,
+        product_price,
+        product_id: productToAdd.product_id,
         item_quantity : itemQuantity,
         total_item_price: productToAdd.product_price * itemQuantity,
       };
