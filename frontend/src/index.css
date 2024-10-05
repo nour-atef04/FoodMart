@@ -13,6 +13,16 @@ code {
     monospace;
 }
 
+@media (max-width: 991.5px) {
+  .nav-item.dropdown .dropdown-toggle {
+    margin-top: 20px;
+    min-width: 200px;
+  }
+
+}
+
+
+
 
 
 

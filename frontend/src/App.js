@@ -107,7 +107,6 @@ function App() {
   useEffect(() => {
     if (fetchedCartItems.length > 0) {
       cartDispatch({ type: "setCartItems", payLoad: fetchedCartItems });
-      console.log(cartItems);
     }
   }, [fetchedCartItems]);
 
