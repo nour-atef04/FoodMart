@@ -21,7 +21,7 @@ const categories = [
   {
     categoryName: "Dairy",
     categoryImgURL:
-      "https://idahomilkproducts.b-cdn.net/wp-content/uploads/2021/09/processing-differences-common-dairy-products.jpg",
+      "https://media.cnn.com/api/v1/images/stellar/prod/210922092746-dairy-products-stock.jpg?q=w_2500,h_1667,x_0,y_0,c_fill",
     backgroundImgUrl: dairyBackgroundImg,
   },
   {

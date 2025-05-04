@@ -1,7 +1,9 @@
-import express from "express";
-import bodyParser from "body-parser";
+import express from "express"; 
+import bodyParser from "body-parser"; 
 import cors from "cors";
 import pg from "pg";
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express();
 const port = 5000;
@@ -12,12 +14,13 @@ app.use(express.static("public"));
 app.use(bodyParser.json());
 
 const db = new pg.Client({
-  user: "postgres",
-  host: "localhost",
-  database: "foodmart",
-  password: "okokoknour04",
-  port: 5432,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
 });
+
 db.connect();
 
 // GET ALL STORE PRODUCTS
@@ -91,7 +94,7 @@ app.post("/api/cartItems", async (req, res) => {
 app.delete("/api/cartItems/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    await db.query("DELETE FROM cart_items WHERE product_id = " + id);
+    await db.query("DELETE FROM cart_items WHERE product_id = $1", [id]);
   } catch (error) {
     console.log(error);
   }

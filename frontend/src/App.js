@@ -39,7 +39,7 @@ const cartReducer = (state, action) => {
     case "removeItem":
       return state.filter((item) => item.product_id !== action.payLoad);
     default:
-      return new Error("unknown operation!");
+      throw new Error(`Unknown action type: ${action.type}`);
   }
 };
 
@@ -78,7 +78,7 @@ const productsReducer = (state, action) => {
         productsToDisplay: state.backupProducts,
       };
     default:
-      return new Error("unknown operation!");
+      throw new Error('Invalid operation!');
   }
 };
 
