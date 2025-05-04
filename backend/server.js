@@ -21,7 +21,14 @@ const db = new pg.Client({
   port: process.env.DB_PORT,
 });
 
-db.connect();
+db.connect((err) => {
+  if (err) {
+    console.error('Error connecting to the database:', err.stack);
+  } else {
+    console.log('Connected to the database');
+  }
+});
+
 
 // GET ALL STORE PRODUCTS
 app.get("/api/storeProducts", async (req, res) => {

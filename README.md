@@ -2,6 +2,55 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Backend & PostgreSQL Setup
+
+This project uses a PostgreSQL database for backend functionality.
+
+### `1. Install PostgreSQL`
+
+Download and install PostgreSQL from: https://www.postgresql.org/download/
+
+During installation, note your PostgreSQL username and password — you’ll use them to connect to your database.
+
+### `2. Create a Database`
+
+After installing PostgreSQL, create a database for the app. You can use either the terminal or a GUI like pgAdmin.
+
+Using terminal: `psql -U your_postgres_username -h localhost`
+
+Enter your password when prompted, then create the database: `CREATE DATABASE your_database_name;`
+
+### `3. Set Up the Database Schema`
+
+1. Download the database.sql file from the project’s root directory.
+2. Open your terminal and connect to PostgreSQL: `psql -U your_postgres_username -d your_database_name`
+3. Run the SQL file to create the tables: `\i /path_to_your_project/database.sql` (Replace /path_to_your_project/ with the actual path to the project.)
+
+This will create the necessary tables in your database.
+
+4. Verify the tables: `\dt`
+
+This will list all the tables found in database.sql.
+
+### `4. Create a .env File in the Backend Folder`
+
+Inside the `backend/` directory, create a file called `.env` and add the following:
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=your_postgres_username
+DB_PASSWORD=your_postgres_password
+DB_NAME=your_database_name
+
+NOTE: Never commit this file — it's already ignored via .gitignore.
+
+### `5. Install Backend Dependencies`
+
+In terminal:
+
+cd backend
+npm install
+
 ## Available Scripts
 
 In the project directory, you can run:
