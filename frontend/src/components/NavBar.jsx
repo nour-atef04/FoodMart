@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import NavBarButton from "./MyButton";
 import backgroundImg from "../images/diagonal-striped-brick.png";
+import { useNavigate } from "react-router-dom";
 
 export default function NavBar({ cartItems, removeItemFromCart, children }) {
   function removeItem(cartItemId) {
@@ -94,14 +95,14 @@ function ViewUser() {
           <hr class="dropdown-divider" />
         </li>
         <li>
-        <UserMenuButton title={"Log-out"} />
+          <UserMenuButton title={"Log-out"} />
         </li>
       </ul>
     </li>
   );
 }
 
-function UserMenuButton({title}){
+function UserMenuButton({ title }) {
   const [buttonColor, setButtonColor] = useState("grey");
   function handleMouseOver() {
     setButtonColor("green");
@@ -110,9 +111,28 @@ function UserMenuButton({title}){
   function handleMouseOut() {
     setButtonColor("grey");
   }
-  return(
-    <button className="btn" style={{color : buttonColor}} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>{title}</button>
-  )
+
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    // Clear the user data (localStorage or state)
+    //localStorage.removeItem("currentUser");
+
+    // Navigate to login page
+    navigate("/login");
+  }
+
+  return (
+    <button
+      className="btn"
+      style={{ color: buttonColor }}
+      onMouseOver={handleMouseOver}
+      onMouseOut={handleMouseOut}
+      onClick={title === "Log-out" ? handleLogout : null}
+    >
+      {title}
+    </button>
+  );
 }
 
 //WHEN CLICKED, VIEW THE ITEMS INSIDE THE CART

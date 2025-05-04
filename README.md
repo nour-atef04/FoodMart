@@ -23,7 +23,7 @@ Enter your password when prompted, then create the database: `CREATE DATABASE yo
 ### `3. Set Up the Database Schema`
 
 1. Download the database.sql file from the project’s root directory.
-2. Open your terminal and connect to PostgreSQL: `psql -U your_postgres_username -d your_database_name`
+2. Open your terminal and connect to PostgreSQL: `psql -U your_postgres_username -h localhost -d your_database_name`
 3. Run the SQL file to create the tables: `\i /path_to_your_project/database.sql` (Replace /path_to_your_project/ with the actual path to the project.)
 
 This will create the necessary tables in your database.
