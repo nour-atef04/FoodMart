@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer } from "react";
+import React, { useEffect, useReducer, useContext } from "react";
 import axios from "axios";
 import CardGrid from "./CardGrid";
 import Card from "./Card";
@@ -10,6 +10,7 @@ import Title from "./Title";
 import SortProductsButtons from "./SortProductsButtons";
 import useStoreProducts from "../hooks/useStoreProducts";
 import useCartItems from "../hooks/useCartItems";
+import { AuthContext } from "./AuthContext";
 
 // REDUCER FUNCTION FOR CART ITEMS
 const cartReducer = (state, action) => {
@@ -83,10 +84,14 @@ const productsReducer = (state, action) => {
   }
 };
 
-function Store({ user_id }) {
-  console.log("id: " + user_id);
+function Store() {
+  //console.log("id: " + user_id);
+
+  const { currentUser } = useContext(AuthContext); // Get currentUser from context
+  const user_id = currentUser?.user_id;
+
   const { storeProducts } = useStoreProducts(); // CUSTOM HOOK TO GET STORE PRODUCTS FROM DATABASE
-  const { fetchedCartItems } = useCartItems(user_id);
+  const { fetchedCartItems } = useCartItems();
 
   const [cartItems, cartDispatch] = useReducer(cartReducer, fetchedCartItems);
   const [{ productsToDisplay, searched }, productsDispatch] = useReducer(

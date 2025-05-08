@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import BasicNavbar from "./BasicNavbar";
-import "./Login.css";
+import "./CSS/Login.css";
+import { AuthContext } from "./AuthContext";
 
-function Signup({ setCurrentUser }) {
+function Signup() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -13,6 +14,9 @@ function Signup({ setCurrentUser }) {
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const { login } = useContext(AuthContext); 
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -61,7 +65,7 @@ function Signup({ setCurrentUser }) {
 
       // Registration successful
       navigate("/store");
-      setCurrentUser(data);
+      login(data);
 
     } catch (err) {
       setError(err.message || "Registration failed. Please try again.");

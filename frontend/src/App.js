@@ -1,22 +1,25 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useState } from 'react';
-import Login from './components/Login';
-import Store from './components/Store';
-import Signup from './components/Signup';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+//import { useState } from 'react';
+import Login from "./components/Login";
+import Store from "./components/Store";
+import Signup from "./components/Signup";
+import { AuthProvider } from "./components/AuthContext";
 
 function App() {
-  const [currentUser, setCurrentUser] = useState(null);
+  //const [currentUser, setCurrentUser] = useState(null);
   //console.log("current user: " + currentUser);
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login setCurrentUser={setCurrentUser} />} />
-        <Route path="/signup" element={<Signup setCurrentUser={setCurrentUser} />} />
-        <Route path="/store" element={<Store user_id={currentUser?.user_id} />} />
-        <Route path="/" element={<Login setCurrentUser={setCurrentUser} />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/store" element={<Store />} />
+          <Route path="/" element={<Login />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

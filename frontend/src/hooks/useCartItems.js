@@ -1,7 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import axios from "axios";
+import { AuthContext } from "../components/AuthContext";
 
-const useCartItems = (user_id) => {
+const useCartItems = () => {
+
+  const { currentUser } = useContext(AuthContext);
+  const user_id = currentUser?.user_id;
+
   const [fetchedCartItems, setFetchedCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
