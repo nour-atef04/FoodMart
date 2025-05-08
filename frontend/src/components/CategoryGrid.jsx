@@ -5,29 +5,30 @@ import dairyBackgroundImg from "../images/509943a6a88d42e385a13d71d5f59071-remov
 import snacksBackgroundImg from "../images/cover_image_1684944554-removebg-preview.png";
 import defaultBackgroundImg from "../images/Screenshot 2024-09-11 133722.png";
 
+import vegetablesCategory from "../images/healthiest-vegetables-mc-240229-02-5432b8.webp";
+import fruitsCategory from "../images/2-2-2-3foodgroups_fruits_detailfeature.jpg";
+import dairyCategory from "../images/210922092746-dairy-products-stock.jpg"
+import snacksCategory from "../images/k_Photo_Recipes_2022-03-KESS-snacks_230228_ATKitchn_KESS-snacks-23_1838.jpeg"
+
 const categories = [
   {
     categoryName: "Vegetables",
-    categoryImgURL:
-      "https://media-cldnry.s-nbcnews.com/image/upload/t_fit-1500w,f_auto,q_auto:best/rockcms/2024-02/healthiest-vegetables-mc-240229-02-5432b8.jpg",
+    categoryImgURL: vegetablesCategory,
     backgroundImgUrl: vegetablesBackgroundImg,
   },
   {
     categoryName: "Fruits",
-    categoryImgURL:
-      "https://www.healthyeating.org/images/default-source/home-0.0/nutrition-topics-2.0/general-nutrition-wellness/2-2-2-3foodgroups_fruits_detailfeature.jpg?sfvrsn=64942d53_4",
+    categoryImgURL: fruitsCategory,
     backgroundImgUrl: fruitsBackgroundImg,
   },
   {
     categoryName: "Dairy",
-    categoryImgURL:
-      "https://media.cnn.com/api/v1/images/stellar/prod/210922092746-dairy-products-stock.jpg?q=w_2500,h_1667,x_0,y_0,c_fill",
+    categoryImgURL: dairyCategory,
     backgroundImgUrl: dairyBackgroundImg,
   },
   {
     categoryName: "Snacks",
-    categoryImgURL:
-      "https://cdn.apartmenttherapy.info/image/upload/f_jpg,q_auto:eco,c_fill,g_auto,w_1500,ar_1:1/k%2FPhoto%2FRecipes%2F2022-03-KESS-snacks%2F230228_ATKitchn_KESS-snacks-23_1838",
+    categoryImgURL: snacksCategory,
     backgroundImgUrl: snacksBackgroundImg,
   },
 ];

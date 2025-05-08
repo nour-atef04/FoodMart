@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import BasicNavbar from "./BasicNavbar";
 import "./CSS/Login.css";
 import { AuthContext } from "./AuthContext";
+import bgImage from "../images/Blog-Post-Featured-Images.webp";
 
 function Signup() {
   const navigate = useNavigate();
@@ -83,7 +84,7 @@ function Signup() {
     <>
       <BasicNavbar />
 
-      <div className="login-container">
+      <div className="login-container" style={{ backgroundImage: `url(${bgImage})` }}>
         <div className="login-card">
           <div className="login-header">
             <h1>Create Account</h1>

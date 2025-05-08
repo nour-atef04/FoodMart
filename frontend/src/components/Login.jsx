@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import BasicNavbar from "./BasicNavbar";
 import "./CSS/Login.css";
 import { AuthContext } from "./AuthContext";
+import bgImage from "../images/Blog-Post-Featured-Images.webp";
 
 function Login() {
   const navigate = useNavigate();
@@ -17,21 +18,20 @@ function Login() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-  
+
     try {
       const response = await fetch("http://localhost:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-  
+
       const data = await response.json();
       //console.log(data);
-  
-      if (response.ok) {
-        login(data); 
-        navigate("/store");
 
+      if (response.ok) {
+        login(data);
+        navigate("/store");
       } else {
         setError(data.message);
       }
@@ -41,7 +41,6 @@ function Login() {
       setIsLoading(false);
     }
   };
-  
 
   const handleSignupClick = (e) => {
     e.preventDefault(); // Prevent default anchor behavior
@@ -52,7 +51,10 @@ function Login() {
     <>
       <BasicNavbar />
 
-      <div className="login-container">
+      <div
+        className="login-container"
+        style={{ backgroundImage: `url(${bgImage})` }}
+      >
         <div className="login-card">
           <div className="login-header">
             <h1>Welcome Back</h1>
@@ -95,8 +97,8 @@ function Login() {
           <div className="login-footer">
             <p>
               Don't have an account?{" "}
-              <a 
-                href="/signup" 
+              <a
+                href="/signup"
                 onClick={handleSignupClick}
                 style={{ cursor: "pointer" }}
               >
