@@ -3,7 +3,7 @@ import NavBarButton from "./MyButton";
 import backgroundImg from "../images/diagonal-striped-brick.png";
 import { useNavigate } from "react-router-dom";
 
-export default function NavBar({ cartItems, removeItemFromCart, children }) {
+export default function NavBar({ cartItems, removeItemFromCart, children, role}) {
   function removeItem(cartItemId) {
     removeItemFromCart(cartItemId);
   }
@@ -48,12 +48,15 @@ export default function NavBar({ cartItems, removeItemFromCart, children }) {
           <div className="collapse navbar-collapse" id="navbarSupportedContent">
             <ul className="navbar-nav w-100 d-flex justify-content-between align-items-center">
               <li className="nav-item m-4 mx-auto">{children[0]}</li>
-              <li className="nav-item">
-                <ViewCart
-                  cartItems={cartItems}
-                  removeItemFromCart={removeItem}
-                />
-              </li>
+                {/* Only render the cart if the role is 'customer' */}
+              {role === "customer" && (
+                <li className="nav-item">
+                  <ViewCart
+                    cartItems={cartItems}
+                    removeItemFromCart={removeItem}
+                  />
+                </li>
+              )}
               <ViewUser />
             </ul>
           </div>

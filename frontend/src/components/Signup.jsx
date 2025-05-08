@@ -11,19 +11,19 @@ function Signup() {
     name: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    //role: "",
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useContext(AuthContext); 
-
+  const { login } = useContext(AuthContext);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -54,7 +54,9 @@ function Signup() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          name: formData.name
+          name: formData.name,
+          role: "customer",
+          //role: formData.role,
         }),
       });
 
@@ -65,9 +67,14 @@ function Signup() {
       }
 
       // Registration successful
-      navigate("/store");
-      login(data);
 
+      // if (formData.role === "employee") {
+      //   navigate("/control");
+      //   login(data);
+      // } else {
+        navigate("/store");
+        login(data);
+      //}
     } catch (err) {
       setError(err.message || "Registration failed. Please try again.");
     } finally {
@@ -84,7 +91,10 @@ function Signup() {
     <>
       <BasicNavbar />
 
-      <div className="login-container" style={{ backgroundImage: `url(${bgImage})` }}>
+      <div
+        className="login-container"
+        style={{ backgroundImage: `url(${bgImage})` }}
+      >
         <div className="login-card">
           <div className="login-header">
             <h1>Create Account</h1>
@@ -147,25 +157,59 @@ function Signup() {
               />
             </div>
 
-            <button 
-              type="submit" 
-              className="login-button" 
-              disabled={isLoading}
-            >
+            {/* USER TYPE */}
+          {/* <div className="d-flex justify-content-center align-items-center">
+            <div className="form-check me-4">
+              <input
+                className="form-check-input"
+                type="radio"
+                id="employee"
+                name="role"
+                value="employee"
+                onChange={handleChange}
+                required
+              />
+              <label className="form-check-label" htmlFor="employee">
+                Employee
+              </label>
+            </div>
+            <div className="form-check">
+              <input
+                className="form-check-input"
+                type="radio"
+                id="customer"
+                name="role"
+                value="customer"
+                onChange={handleChange}
+                required
+              />
+              <label className="form-check-label" htmlFor="customer">
+                Customer
+              </label>
+            </div>
+          </div> */}
+
+            <button type="submit" className="login-button" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
                   <span className="ms-2">Creating account...</span>
                 </>
-              ) : "Sign Up"}
+              ) : (
+                "Sign Up"
+              )}
             </button>
           </form>
 
           <div className="login-footer">
             <p>
               Already have an account?{" "}
-              <a 
-                href="/login" 
+              <a
+                href="/login"
                 onClick={handleLoginClick}
                 style={{ cursor: "pointer" }}
               >

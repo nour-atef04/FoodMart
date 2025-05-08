@@ -32,13 +32,13 @@ db.connect((err) => {
 
 // REGISTER
 app.post("/api/register", async (req, res) => {
-  const { email, password, name } = req.body;
+  const { email, password, name, role } = req.body;
 
   // Basic validation
-  if (!email || !password || !name) {
+  if (!email || !password || !name || !role) {
     return res
       .status(400)
-      .json({ message: "Name, email and password are required" });
+      .json({ message: "Name, email, password and role are required" });
   }
 
   try {
@@ -52,8 +52,8 @@ app.post("/api/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await db.query(
-      "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING user_id, email, name",
-      [email, hashedPassword, name]
+      "INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING user_id, email, name, role",
+      [email, hashedPassword, name, role]
     );
 
     const user = result.rows[0];
@@ -63,6 +63,7 @@ app.post("/api/register", async (req, res) => {
       user_id: user.user_id,
       email: user.email,
       name: user.name,
+      role: user.role,
     });
   } catch (error) {
     console.error("Registration error:", error);
@@ -75,7 +76,7 @@ app.post("/api/register", async (req, res) => {
 
 // LOGIN
 app.post("/api/login", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, role } = req.body;
 
   try {
     const result = await db.query("SELECT * FROM users WHERE email = $1", [
@@ -88,12 +89,13 @@ app.post("/api/login", async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (isMatch) {
+    if (isMatch && role === user.role) {
       res.status(200).json({
         message: "Login successful",
         user_id: user.user_id,
         email: user.email,
         name: user.name,
+        role: user.role,
       });
     } else {
       res.status(401).json({ message: "Invalid email or password" });
@@ -195,6 +197,99 @@ app.delete("/api/cartItems/:user_id/:product_id", async (req, res) => {
   }
 });
 
+// ADD NEW PRODUCT (Admin Only)
+app.post("/api/storeProducts", async (req, res) => {
+  const { product_name, product_price, product_category, product_img, } = req.body;
+
+  console.log(product_name);
+  console.log(product_category);
+  console.log(product_price);
+
+  // Basic validation
+  if (!product_name || !product_img || !product_price || !product_category) {
+    return res.status(400).json({ message: "Product name, image, category and price are required" });
+  }
+
+  try {
+    const result = await db.query(
+      "INSERT INTO store_products (product_name, product_img, product_price, product_category) VALUES ($1, $2, $3, $4) RETURNING product_id, product_name, product_img, product_price, product_category",
+      [product_name, product_img, product_price, product_category]
+    );
+
+    const newProduct = result.rows[0];
+    res.status(201).json({
+      message: "Product added successfully",
+      product: newProduct,
+    });
+  } catch (error) {
+    console.error("Product addition error:", error);
+    res.status(500).json({
+      message: "Product addition failed",
+      error: error.message,
+    });
+  }
+});
+
+// UPDATE PRODUCT (Admin Only)
+app.put("/api/storeProducts/:product_id", async (req, res) => {
+  const { product_id } = req.params;
+  const { product_name, product_img, product_price } = req.body;
+
+  // Basic validation
+  if (!product_name || !product_img || !product_price) {
+    return res.status(400).json({ message: "Product name, image, and price are required" });
+  }
+
+  try {
+    const result = await db.query(
+      "UPDATE store_products SET product_name = $1, product_img = $2, product_price = $3 WHERE product_id = $4 RETURNING product_id, product_name, product_img, product_price",
+      [product_name, product_img, product_price, product_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const updatedProduct = result.rows[0];
+    res.status(200).json({
+      message: "Product updated successfully",
+      product: updatedProduct,
+    });
+  } catch (error) {
+    console.error("Product update error:", error);
+    res.status(500).json({
+      message: "Product update failed",
+      error: error.message,
+    });
+  }
+});
+
+// DELETE PRODUCT (Admin Only)
+app.delete("/api/storeProducts/:product_id", async (req, res) => {
+  const { product_id } = req.params;
+
+  try {
+    const result = await db.query("DELETE FROM store_products WHERE product_id = $1 RETURNING product_id", [product_id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json({
+      message: "Product deleted successfully",
+      product_id: product_id,
+    });
+  } catch (error) {
+    console.error("Product deletion error:", error);
+    res.status(500).json({
+      message: "Product deletion failed",
+      error: error.message,
+    });
+  }
+});
+
+
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
+  
 });

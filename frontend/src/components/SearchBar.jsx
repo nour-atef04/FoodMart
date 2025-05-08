@@ -19,7 +19,7 @@ export default function SearchBar({ searchStoreProducts }) {
   }
 
   return (
-    <form className="d-flex" onSubmit={handleSubmit}>
+    <form className="d-flex " onSubmit={handleSubmit}>
       <input
         className="form-control me-2"
         type="search"

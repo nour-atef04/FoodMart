@@ -1,3 +1,7 @@
+// TO LOGIN AS AN EMPLOYEE TO THE CONTROL PANEL, USE THIS ACCOUNT:
+// email address: test@test.com
+// password: 123456
+
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import BasicNavbar from "./BasicNavbar";
@@ -9,6 +13,7 @@ function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -17,23 +22,30 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setError(""); // clear any previous errors
 
     try {
       const response = await fetch("http://localhost:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, role }),
       });
 
       const data = await response.json();
       //console.log(data);
 
       if (response.ok) {
-        login(data);
-        navigate("/store");
+        if (data.role === "employee") {
+          login(data);
+          navigate("/control"); // Navigate to control panel for employees
+        } else if (data.role === "customer") {
+          login(data);
+          navigate("/store"); // Navigate to store for customers
+        } else {
+          setError("Invalid role returned by server.");
+        }
       } else {
-        setError(data.message);
+        setError(data.message || "Login failed, please try again.");
       }
     } catch (err) {
       setError("Something went wrong. Please try again.");
@@ -87,6 +99,38 @@ function Login() {
                 required
                 minLength="6"
               />
+            </div>
+
+            {/* USER TYPE */}
+            <div className="d-flex justify-content-center align-items-center">
+              <div className="form-check me-4">
+                <input
+                  className="form-check-input"
+                  type="radio"
+                  id="employee"
+                  name="role"
+                  value="employee"
+                  onChange={(e) => setRole(e.target.value)}
+                  required
+                />
+                <label className="form-check-label" htmlFor="employee">
+                  Employee
+                </label>
+              </div>
+              <div className="form-check">
+                <input
+                  className="form-check-input"
+                  type="radio"
+                  id="customer"
+                  name="role"
+                  value="customer"
+                  onChange={(e) => setRole(e.target.value)}
+                  required
+                />
+                <label className="form-check-label" htmlFor="customer">
+                  Customer
+                </label>
+              </div>
             </div>
 
             <button type="submit" className="login-button" disabled={isLoading}>

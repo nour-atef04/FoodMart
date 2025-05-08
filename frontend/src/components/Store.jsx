@@ -166,7 +166,7 @@ function Store() {
     }
   }
 
-  //FILTER AND SEARCHING
+  // FILTER AND SEARCHING
   function filterStoreProducts(category) {
     const filteredProducts = storeProducts.filter(
       (storeProduct) => storeProduct.product_category === category
@@ -212,7 +212,7 @@ function Store() {
 
   return (
     <div>
-      <NavBar cartItems={cartItems} removeItemFromCart={removeItemFromCart}>
+      <NavBar cartItems={cartItems} removeItemFromCart={removeItemFromCart} role="customer">
         <SearchBar searchStoreProducts={searchStoreProducts} />
         <Title
           handleTitleClick={() => {
