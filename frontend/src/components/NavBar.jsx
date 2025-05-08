@@ -169,32 +169,23 @@ function ViewCart({ cartItems, removeItemFromCart }) {
         hoverColor={"#8B9A61"}
       />
       <CartList
+        cartItems={cartItems}
         cartItemsLength={cartItems.length}
         visibility={visibility}
         handleClick={handleClick}
         totalCheckoutPrice={totalCheckoutPrice}
-      >
-        {cartItems.map((cartItem, index) => (
-          <CardListItem
-            key={index}
-            cartItemId={cartItem.product_id}
-            cartItemImg={cartItem.product_img}
-            cartItemName={cartItem.product_name}
-            cartItemQuantity={cartItem.item_quantity}
-            cartItemTotalPrice={cartItem.total_item_price}
-            removeItemFromCart={removeItemFromCart}
-          />
-        ))}
-      </CartList>
+        removeItemFromCart={removeItemFromCart}
+      />
     </>
   );
 }
 
 function CartList({
-  cartItemsLength,
+  cartItems,
   visibility,
   handleClick,
   totalCheckoutPrice,
+  removeItemFromCart,
   children,
 }) {
   const cartListDivStyle = {
@@ -255,17 +246,31 @@ function CartList({
       </button>
       {children}
 
-      {cartItemsLength > 0 ? (
-        <button
-          className="btn mt-0 m-5"
-          style={{
-            backgroundColor: "orange",
-            color: "white",
-            fontWeight: "bold",
-          }}
-        >
-          Continue To Checkout
-        </button>
+      {cartItems.length > 0 ? (
+        <>
+          {cartItems.map((cartItem, index) => (
+            <CardListItem
+              key={index}
+              cartItemId={cartItem.product_id}
+              cartItemImg={cartItem.product_img}
+              cartItemName={cartItem.product_name}
+              cartItemQuantity={cartItem.item_quantity}
+              cartItemTotalPrice={cartItem.total_item_price}
+              removeItemFromCart={removeItemFromCart}
+            />
+          ))}
+
+          <button
+            className="btn mt-0 m-5"
+            style={{
+              backgroundColor: "orange",
+              color: "white",
+              fontWeight: "bold",
+            }}
+          >
+            Continue To Checkout
+          </button>
+        </>
       ) : (
         <div
           style={{
