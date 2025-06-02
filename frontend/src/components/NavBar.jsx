@@ -2,8 +2,15 @@ import React, { useState, useEffect } from "react";
 import NavBarButton from "./MyButton";
 import backgroundImg from "../images/diagonal-striped-brick.png";
 import { useNavigate } from "react-router-dom";
+import RecommendedProducts from "./RecommendedProducts";
 
-export default function NavBar({ cartItems, removeItemFromCart, children, role}) {
+export default function NavBar({
+  cartItems,
+  removeItemFromCart,
+  children,
+  role,
+  addItemToCart,
+}) {
   function removeItem(cartItemId) {
     removeItemFromCart(cartItemId);
   }
@@ -48,12 +55,13 @@ export default function NavBar({ cartItems, removeItemFromCart, children, role})
           <div className="collapse navbar-collapse" id="navbarSupportedContent">
             <ul className="navbar-nav w-100 d-flex justify-content-between align-items-center">
               <li className="nav-item m-4 mx-auto">{children[0]}</li>
-                {/* Only render the cart if the role is 'customer' */}
+              {/* Only render the cart if the role is 'customer' */}
               {role === "customer" && (
                 <li className="nav-item">
                   <ViewCart
                     cartItems={cartItems}
                     removeItemFromCart={removeItem}
+                    addItemToCart={addItemToCart}
                   />
                 </li>
               )}
@@ -140,7 +148,7 @@ function UserMenuButton({ title }) {
 
 //WHEN CLICKED, VIEW THE ITEMS INSIDE THE CART
 
-function ViewCart({ cartItems, removeItemFromCart }) {
+function ViewCart({ cartItems, removeItemFromCart, addItemToCart }) {
   const [visibility, setVisibility] = useState("none");
   const [totalCheckoutPrice, setTotalCheckoutPrice] = useState(0);
 
@@ -175,6 +183,7 @@ function ViewCart({ cartItems, removeItemFromCart }) {
         handleClick={handleClick}
         totalCheckoutPrice={totalCheckoutPrice}
         removeItemFromCart={removeItemFromCart}
+        addItemToCart={addItemToCart}
       />
     </>
   );
@@ -186,6 +195,7 @@ function CartList({
   handleClick,
   totalCheckoutPrice,
   removeItemFromCart,
+  addItemToCart,
   children,
 }) {
   const cartListDivStyle = {
@@ -203,47 +213,44 @@ function CartList({
 
   const cartListTitleStyle = {
     display: "inline",
-    position: "absolute",
     color: "grey",
-    letterSpacing: "4px",
   };
 
   const closeCartListButtonStyle = {
-    position: "absolute",
-    right: "0",
+    float: "right",
     color: "grey",
   };
 
   const checkoutPriceDisplayerStyle = {
-    position: "absolute",
     color: "grey",
     letterSpacing: "4px",
+    marginBottom: "20px",
   };
 
   return (
     <div className="col-lg-5 col-md-6 col-12" style={cartListDivStyle}>
-      <h2 style={cartListTitleStyle} className="my-2 mx-5">
-        YOUR CART
-      </h2>
-      <p className="my-5 mx-5" style={checkoutPriceDisplayerStyle}>
-        Total price: ${totalCheckoutPrice.toFixed(2)}
-      </p>
-      <button
-        className="btn m-2"
-        style={closeCartListButtonStyle}
-        onClick={handleClick}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="30"
-          height="30"
-          fill="currentColor"
-          className="bi bi-x-lg"
-          viewBox="0 0 16 16"
+      <div style={{ maxWidth: "80%", margin: "20px auto" }}>
+        <h3 style={cartListTitleStyle}>Your Cart</h3>
+        <button
+          className="btn"
+          style={closeCartListButtonStyle}
+          onClick={handleClick}
         >
-          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z" />
-        </svg>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="30"
+            height="30"
+            fill="currentColor"
+            className="bi bi-x-lg"
+            viewBox="0 0 16 16"
+          >
+            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z" />
+          </svg>
+        </button>
+        <p style={checkoutPriceDisplayerStyle}>
+          Total price: ${totalCheckoutPrice.toFixed(2)}
+        </p>
+      </div>
       {children}
 
       {cartItems.length > 0 ? (
@@ -261,15 +268,34 @@ function CartList({
           ))}
 
           <button
-            className="btn mt-0 m-5"
+            className="btn"
             style={{
               backgroundColor: "orange",
               color: "white",
               fontWeight: "bold",
+              width: "40%",
+              display: "block",
+              marginLeft: "10%",
+              marginTop: "20px",
+              marginBottom: "20px",
             }}
           >
             Continue To Checkout
           </button>
+
+          <hr
+            style={{
+              width: "80%",
+              margin: "50px auto",
+              border: "none",
+              borderTop: "1px solid #555",
+            }}
+          />
+
+          <RecommendedProducts
+            cartItems={cartItems}
+            addToCart={addItemToCart}
+          />
         </>
       ) : (
         <div
@@ -307,8 +333,7 @@ function CardListItem({
       style={{
         maxWidth: "80%",
         position: "relative",
-        margin: "10%",
-        marginTop: "100px",
+        margin: "20px auto",
       }}
     >
       <div className="row g-0">

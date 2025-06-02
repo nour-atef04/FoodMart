@@ -4,6 +4,11 @@ import cors from "cors";
 import pg from "pg";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
+import recommendationsRouter from "./routes/recommendations.js";
+import { exec } from "child_process";
+import path from "path";
+import { fileURLToPath } from "url";
+
 dotenv.config();
 
 const app = express();
@@ -199,24 +204,56 @@ app.delete("/api/cartItems/:user_id/:product_id", async (req, res) => {
 
 // ADD NEW PRODUCT (Admin Only)
 app.post("/api/storeProducts", async (req, res) => {
-  const { product_name, product_price, product_category, product_img, } = req.body;
+  const {
+    product_name,
+    product_description,
+    product_price,
+    product_category,
+    product_img,
+  } = req.body;
 
-  console.log(product_name);
-  console.log(product_category);
-  console.log(product_price);
+  console.log("Adding new product:", product_name);
+  console.log("Category:", product_category);
+  console.log("Price:", product_price);
 
   // Basic validation
-  if (!product_name || !product_img || !product_price || !product_category) {
-    return res.status(400).json({ message: "Product name, image, category and price are required" });
+  if (
+    !product_name ||
+    !product_img ||
+    !product_price ||
+    !product_category ||
+    !product_description
+  ) {
+    return res.status(400).json({
+      message:
+        "Product name, image, category, description and price are required",
+    });
   }
 
   try {
     const result = await db.query(
-      "INSERT INTO store_products (product_name, product_img, product_price, product_category) VALUES ($1, $2, $3, $4) RETURNING product_id, product_name, product_img, product_price, product_category",
-      [product_name, product_img, product_price, product_category]
+      "INSERT INTO store_products (product_name, product_description, product_img, product_price, product_category) VALUES ($1, $2, $3, $4, $5) RETURNING product_id, product_name, product_description, product_img, product_price, product_category",
+      [
+        product_name,
+        product_description,
+        product_img,
+        product_price,
+        product_category,
+      ]
     );
 
     const newProduct = result.rows[0];
+
+    // Update recommendations after adding new product
+    console.log("Product added successfully, updating recommendations...");
+    try {
+      await updateRecommendations();
+      console.log("Successfully updated recommendations");
+    } catch (recError) {
+      console.error("Failed to update recommendations:", recError);
+      // Don't fail the request if recommendations update fails
+    }
+
     res.status(201).json({
       message: "Product added successfully",
       product: newProduct,
@@ -233,17 +270,39 @@ app.post("/api/storeProducts", async (req, res) => {
 // UPDATE PRODUCT (Admin Only)
 app.put("/api/storeProducts/:product_id", async (req, res) => {
   const { product_id } = req.params;
-  const { product_name, product_img, product_price } = req.body;
+  const {
+    product_name,
+    product_description,
+    product_img,
+    product_price,
+    product_category,
+  } = req.body;
 
   // Basic validation
-  if (!product_name || !product_img || !product_price) {
-    return res.status(400).json({ message: "Product name, image, and price are required" });
+  if (
+    !product_name ||
+    !product_description ||
+    !product_img ||
+    !product_price ||
+    !product_category
+  ) {
+    return res.status(400).json({
+      message:
+        "Product name, description, image, price, and category are required",
+    });
   }
 
   try {
     const result = await db.query(
-      "UPDATE store_products SET product_name = $1, product_img = $2, product_price = $3 WHERE product_id = $4 RETURNING product_id, product_name, product_img, product_price",
-      [product_name, product_img, product_price, product_id]
+      "UPDATE store_products SET product_name = $1, product_description = $2, product_img = $3, product_price = $4, product_category = $5 WHERE product_id = $6 RETURNING product_id, product_name, product_description, product_img, product_price, product_category",
+      [
+        product_name,
+        product_description,
+        product_img,
+        product_price,
+        product_category,
+        product_id,
+      ]
     );
 
     if (result.rows.length === 0) {
@@ -251,6 +310,16 @@ app.put("/api/storeProducts/:product_id", async (req, res) => {
     }
 
     const updatedProduct = result.rows[0];
+
+    // Update recommendations after updating product
+    try {
+      await updateRecommendations();
+      console.log("Successfully updated recommendations");
+    } catch (recError) {
+      console.error("Failed to update recommendations:", recError);
+      // Don't fail the request if recommendations update fails
+    }
+
     res.status(200).json({
       message: "Product updated successfully",
       product: updatedProduct,
@@ -269,10 +338,22 @@ app.delete("/api/storeProducts/:product_id", async (req, res) => {
   const { product_id } = req.params;
 
   try {
-    const result = await db.query("DELETE FROM store_products WHERE product_id = $1 RETURNING product_id", [product_id]);
+    const result = await db.query(
+      "DELETE FROM store_products WHERE product_id = $1 RETURNING product_id",
+      [product_id]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Update recommendations after deleting product
+    try {
+      await updateRecommendations();
+      console.log("Successfully updated recommendations");
+    } catch (recError) {
+      console.error("Failed to update recommendations:", recError);
+      // Don't fail the request if recommendations update fails
     }
 
     res.status(200).json({
@@ -288,8 +369,48 @@ app.delete("/api/storeProducts/:product_id", async (req, res) => {
   }
 });
 
+// Add recommendations route
+app.use("/api/recommendations", recommendationsRouter);
+
+// Get current directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Function to run Python script
+const updateRecommendations = () => {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(
+      __dirname,
+      "scripts",
+      "calculate_recommendations.py"
+    );
+
+    // Using Windows CMD syntax
+    const command = `cd "${path.dirname(
+      __dirname
+    )}" && .venv\\Scripts\\activate.bat && cd backend\\scripts && python calculate_recommendations.py`;
+
+    console.log("Attempting to run Python script with command:", command);
+    console.log("Current directory:", __dirname);
+    console.log("Parent directory:", path.dirname(__dirname));
+
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error("Error running Python script:", error);
+        console.error("Error details:", error.message);
+        console.error("Error code:", error.code);
+        reject(error);
+        return;
+      }
+      if (stderr) {
+        console.error("Python script stderr:", stderr);
+      }
+      console.log("Python script output:", stdout);
+      resolve();
+    });
+  });
+};
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-  
 });

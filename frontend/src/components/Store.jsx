@@ -119,7 +119,6 @@ function Store() {
 
   // HANDLING CART ITEMS
   async function addItemToCart(id, itemQuantity) {
-
     if (!user_id) {
       alert("Please login to add items to cart");
       return;
@@ -155,12 +154,13 @@ function Store() {
   }
 
   async function removeItemFromCart(cartItemId) {
-
     if (!user_id) return;
 
     cartDispatch({ type: "removeItem", payLoad: cartItemId });
     try {
-      await axios.delete(`http://localhost:5000/api/cartItems/${user_id}/${cartItemId}`);
+      await axios.delete(
+        `http://localhost:5000/api/cartItems/${user_id}/${cartItemId}`
+      );
     } catch (error) {
       console.error("Error deleting item from cart database: ", error);
     }
@@ -212,7 +212,12 @@ function Store() {
 
   return (
     <div>
-      <NavBar cartItems={cartItems} removeItemFromCart={removeItemFromCart} role="customer">
+      <NavBar
+        cartItems={cartItems}
+        removeItemFromCart={removeItemFromCart}
+        role="customer"
+        addItemToCart={addItemToCart}
+      >
         <SearchBar searchStoreProducts={searchStoreProducts} />
         <Title
           handleTitleClick={() => {

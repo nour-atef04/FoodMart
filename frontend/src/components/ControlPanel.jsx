@@ -6,6 +6,7 @@ export default function ControlPanel() {
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
     product_name: "",
+    product_description: "",
     product_price: "",
     product_category: "",
     product_img: "",
@@ -32,7 +33,7 @@ export default function ControlPanel() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    console.log("Submitting form data:", formData); // Check the form data
+    console.log("Submitting form data:", formData);
 
     const apiUrl = editingId
       ? `http://localhost:5000/api/storeProducts/${editingId}`
@@ -45,17 +46,43 @@ export default function ControlPanel() {
       data: formData,
     })
       .then((response) => {
-        alert('Product added successfully!');
+        if (editingId) {
+          // Update existing product in the list
+          setProducts(
+            products.map((product) =>
+              product.product_id === editingId ? response.data.product : product
+            )
+          );
+        } else {
+          // Add new product to the list
+          setProducts([...products, response.data.product]);
+        }
+
+        // Reset form and show success message
+        resetForm();
+        setSuccessMessage(
+          editingId
+            ? "Product updated successfully!"
+            : "Product added successfully!"
+        );
+
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 3000);
       })
       .catch((error) => {
         console.error("Error submitting product data", error);
-        alert('An error occurred while submitting the product. Please try again.');
+        alert(
+          "An error occurred while submitting the product. Please try again."
+        );
       });
   };
 
   const handleEdit = (product) => {
     setFormData({
       product_name: product.product_name,
+      product_description: product.product_description,
       product_price: product.product_price.toString(),
       product_category: product.product_category,
       product_img: product.product_img,
@@ -77,6 +104,7 @@ export default function ControlPanel() {
   const resetForm = () => {
     setFormData({
       product_name: "",
+      product_description: "",
       product_price: "",
       product_category: "",
       product_img: "",
@@ -107,6 +135,17 @@ export default function ControlPanel() {
             </div>
 
             <div className="form-group">
+              <label>Product Description</label>
+              <input
+                type="text"
+                name="product_description"
+                value={formData.product_description}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
               <label>Price ($)</label>
               <input
                 type="number"
@@ -122,7 +161,7 @@ export default function ControlPanel() {
             <div className="form-group">
               <label>Category</label>
               <select
-                name="product_category" 
+                name="product_category"
                 value={formData.product_category}
                 onChange={handleInputChange}
                 required
@@ -131,10 +170,10 @@ export default function ControlPanel() {
                   Select a category
                 </option>{" "}
                 {/* Default option */}
-                <option value="fruits">Fruits</option>
-                <option value="vegetables">Vegetables</option>
-                <option value="dairy">Dairy</option>
-                <option value="snacks">Snacks</option>
+                <option value="Fruits">Fruits</option>
+                <option value="Vegetables">Vegetables</option>
+                <option value="Dairy">Dairy</option>
+                <option value="Snacks">Snacks</option>
               </select>
             </div>
 
