@@ -58,7 +58,7 @@ app.post("/api/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await db.query(
       "INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING user_id, email, name, role",
-      [email, hashedPassword, name, role]
+      [email, hashedPassword, name, role],
     );
 
     const user = result.rows[0];
@@ -141,7 +141,7 @@ app.get("/api/cartItems/:user_id", async (req, res) => {
         cart_items.product_id = store_products.product_id
       WHERE 
         cart_items.user_id = $1`,
-      [user_id]
+      [user_id],
     );
     res.status(200).json(result.rows); // RETURN ALL CART ITEMS
   } catch (error) {
@@ -155,13 +155,13 @@ app.post("/api/cartItems", async (req, res) => {
   try {
     const existingItem = await db.query(
       "SELECT * FROM cart_items WHERE product_id = $1 AND user_id = $2",
-      [product_id, user_id]
+      [product_id, user_id],
     );
 
     if (existingItem.rows.length > 0) {
       const currentQuantity = parseInt(existingItem.rows[0].item_quantity, 10);
       const currentTotalPrice = parseFloat(
-        existingItem.rows[0].total_item_price
+        existingItem.rows[0].total_item_price,
       );
       const new_item_quantity = currentQuantity + item_quantity;
       const new_total_item_price = currentTotalPrice + total_item_price;
@@ -169,14 +169,14 @@ app.post("/api/cartItems", async (req, res) => {
       // Update the existing item
       await db.query(
         "UPDATE cart_items SET item_quantity = $1, total_item_price = $2 WHERE product_id = $3 AND user_id = $4",
-        [new_item_quantity, new_total_item_price, product_id, user_id]
+        [new_item_quantity, new_total_item_price, product_id, user_id],
       );
     }
     // Add new item if no existing item with same id
     else {
       await db.query(
         "INSERT INTO cart_items (user_id, product_id, item_quantity, total_item_price) VALUES($1, $2, $3, $4)",
-        [user_id, product_id, item_quantity, total_item_price]
+        [user_id, product_id, item_quantity, total_item_price],
       );
     }
 
@@ -194,7 +194,7 @@ app.delete("/api/cartItems/:user_id/:product_id", async (req, res) => {
   try {
     await db.query(
       "DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2",
-      [user_id, product_id]
+      [user_id, product_id],
     );
     res.status(200).json({ message: "Item removed" });
   } catch (error) {
@@ -239,7 +239,7 @@ app.post("/api/storeProducts", async (req, res) => {
         product_img,
         product_price,
         product_category,
-      ]
+      ],
     );
 
     const newProduct = result.rows[0];
@@ -302,7 +302,7 @@ app.put("/api/storeProducts/:product_id", async (req, res) => {
         product_price,
         product_category,
         product_id,
-      ]
+      ],
     );
 
     if (result.rows.length === 0) {
@@ -340,7 +340,7 @@ app.delete("/api/storeProducts/:product_id", async (req, res) => {
   try {
     const result = await db.query(
       "DELETE FROM store_products WHERE product_id = $1 RETURNING product_id",
-      [product_id]
+      [product_id],
     );
 
     if (result.rows.length === 0) {
@@ -379,16 +379,13 @@ const __dirname = path.dirname(__filename);
 // Function to run Python script
 const updateRecommendations = () => {
   return new Promise((resolve, reject) => {
-    const scriptPath = path.join(
-      __dirname,
-      "scripts",
-      "calculate_recommendations.py"
-    );
+    let command;
 
-    // Using Windows CMD syntax
-    const command = `cd "${path.dirname(
-      __dirname
-    )}" && .venv\\Scripts\\activate.bat && cd backend\\scripts && python calculate_recommendations.py`;
+    if (process.env.IS_DOCKER === "true") {
+      command = "python scripts/calculate_recommendations.py";
+    } else {
+      command = `cd "${path.dirname(__dirname)}" && .venv\\Scripts\\activate.bat && cd backend\\scripts && python calculate_recommendations.py`;
+    }
 
     console.log("Attempting to run Python script with command:", command);
     console.log("Current directory:", __dirname);

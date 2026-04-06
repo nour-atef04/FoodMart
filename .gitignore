@@ -34,3 +34,7 @@ yarn-error.log*
 # System Files
 .DS_Store
 Thumbs.db 
+
+# Docker & Database
+postgres_data/
+database/pgdata/

@@ -73,3 +73,16 @@ FROM store_products sp
 LEFT JOIN product_similarities ps ON sp.product_id = ps.product_id
 GROUP BY sp.product_id, sp.product_name, sp.product_category, sp.product_price, sp.product_img
 ORDER BY similarity_count DESC;
+
+-- Enable the pgcrypto extension to hash passwords
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Insert default test employee account
+INSERT INTO users (email, password_hash, name, role)
+VALUES (
+    'test@test.com', 
+    crypt('123456', gen_salt('bf')), -- Generates a bcrypt-compatible hash
+    'Test Employee', 
+    'employee'
+)
+ON CONFLICT (email) DO NOTHING; -- Prevents errors if the script runs twice

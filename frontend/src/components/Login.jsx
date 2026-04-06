@@ -11,8 +11,8 @@ import bgImage from "../images/Blog-Post-Featured-Images.webp";
 
 function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("nour@example.com");
+  const [password, setPassword] = useState("qwerty123456");
   const [role, setRole] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
