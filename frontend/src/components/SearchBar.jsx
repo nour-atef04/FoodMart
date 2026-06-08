@@ -1,12 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import NavBarButton from "./MyButton";
 
-export default function SearchBar({ searchStoreProducts }) {
+export default function SearchBar({ searchValue, onSearch }) {
   const [inputValue, setInputValue] = useState("");
 
+  useEffect(() => {
+    setInputValue(searchValue || "");
+  }, [searchValue]);
+
   function handleClick() {
-    searchStoreProducts(inputValue);
-    setInputValue("");
+    onSearch(inputValue);
   }
 
   function handleChange(event) {

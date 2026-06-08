@@ -1,5 +1,6 @@
 import React, { useEffect, useReducer } from "react";
 import axios from "axios";
+import { useSearchParams } from "react-router-dom";
 import CardGrid from "./CardGrid";
 import Card from "./Card";
 import NavBar from "./NavBar";
@@ -84,28 +85,30 @@ const productsReducer = (state, action) => {
 };
 
 function Store() {
-  const {
-    storeProducts,
-    refetchStoreProducts,
-  } = useStoreProducts(); // CUSTOM HOOK TO GET STORE PRODUCTS FROM DATABASE
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
+  const categoryQuery = searchParams.get("category") || "";
+  const activeFilter = searchQuery || categoryQuery;
+
+  const { storeProducts, refetchStoreProducts } = useStoreProducts(
+    searchQuery,
+    categoryQuery,
+  ); // CUSTOM HOOK TO GET STORE PRODUCTS FROM DATABASE
   const { fetchedCartItems } = useCartItems();
 
   const [cartItems, cartDispatch] = useReducer(cartReducer, fetchedCartItems);
   const [isCheckingOut, setIsCheckingOut] = React.useState(false);
-  const [{ productsToDisplay, searched }, productsDispatch] = useReducer(
+  const [{ productsToDisplay }, productsDispatch] = useReducer(
     productsReducer,
     {
       productsToDisplay: storeProducts, // PRODUCTS CURRENTLY IN DISPLAY
       backupProducts: storeProducts, // BACKUP FOR UNSORTING
-      searched: null, // CHECK IF USER ENTERED IN SEARCH
     }
   );
 
   // LOAD ALL STORE PRODUCTS
   useEffect(() => {
-    if (storeProducts.length > 0) {
-      productsDispatch({ type: "setProducts", payLoad: storeProducts });
-    }
+    productsDispatch({ type: "setProducts", payLoad: storeProducts });
   }, [storeProducts]);
 
   // LOAD ALL CART ITEMS
@@ -201,28 +204,30 @@ function Store() {
   }
 
   // FILTER AND SEARCHING
-  function filterStoreProducts(category) {
-    const filteredProducts = storeProducts.filter(
-      (storeProduct) => storeProduct.product_category === category
-    );
+  function updateQueryParams(nextParams) {
+    const nextSearchParams = new URLSearchParams(searchParams);
 
-    productsDispatch({ type: "filterProducts", payLoad: filteredProducts });
+    Object.entries(nextParams).forEach(([key, value]) => {
+      if (value && value.trim()) {
+        nextSearchParams.set(key, value.trim());
+      } else {
+        nextSearchParams.delete(key);
+      }
+    });
+
+    setSearchParams(nextSearchParams, { replace: true });
   }
 
   function searchStoreProducts(search) {
-    if (search) {
-      const searchedProducts = storeProducts.filter(
-        (storeProduct) =>
-          storeProduct.product_category.toLowerCase() ===
-            search.toLowerCase() ||
-          storeProduct.product_name.toLowerCase() === search.toLowerCase()
-      );
-      productsDispatch({
-        type: "searchProducts",
-        payLoad: searchedProducts,
-        search,
-      });
-    }
+    updateQueryParams({ search, category: "" });
+  }
+
+  function filterStoreProducts(category) {
+    updateQueryParams({ category, search: "" });
+  }
+
+  function clearFilters() {
+    setSearchParams({}, { replace: true });
   }
 
   // SORT PRODUCTS BY USER'S CHOICE
@@ -254,15 +259,18 @@ function Store() {
         role="customer"
         addItemToCart={addItemToCart}
       >
-        <SearchBar searchStoreProducts={searchStoreProducts} />
+        <SearchBar
+          searchValue={searchQuery}
+          onSearch={searchStoreProducts}
+        />
         <Title
           handleTitleClick={() => {
-            productsDispatch({ type: "setProducts", payLoad: storeProducts });
+            clearFilters();
           }}
         />
       </NavBar>
       <CategoryGrid
-        searched={searched}
+        activeFilter={activeFilter}
         filterStoreProducts={filterStoreProducts}
       />
       <SortProductsButtons

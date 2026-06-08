@@ -33,7 +33,7 @@ const categories = [
   },
 ];
 
-export default function CategoryGrid({ searched, filterStoreProducts}) {
+export default function CategoryGrid({ activeFilter, filterStoreProducts}) {
   const [hoveredIndex, setHoveredIndex] = useState(-1);
   const [background, setBackground] = useState(defaultBackgroundImg);
   const [categorySelectedBackground, setCategorySelectedBackground] =
@@ -83,7 +83,7 @@ export default function CategoryGrid({ searched, filterStoreProducts}) {
 
   return (
     <>
-      {!searched ? (
+      {!activeFilter ? (
         <div className="mb-5">
           <div className="p-5 text-center" style={backgroundStyle(background)}>
             <div className="container p-1">
@@ -141,7 +141,7 @@ export default function CategoryGrid({ searched, filterStoreProducts}) {
               d="m21 21-3.5-3.5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
             />
           </svg>
-          Results for "{searched}"
+          Results for "{activeFilter}"
         </h4>
       )}
     </>
