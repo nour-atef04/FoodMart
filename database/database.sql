@@ -23,13 +23,8 @@ VALUES
     ('https://img.freepik.com/premium-photo/smooth-butter-elegance_996379-9801.jpg', 'Butter', 11.50, 'Dairy', 'Creamy unsalted butter perfect for cooking and baking', 12),
     ('https://img.freepik.com/premium-photo/plain-lettuce-isolated-white-background_434193-7334.jpg', 'Lettuce', 5.00, 'Vegetables', 'Fresh crisp lettuce leaves for salads and sandwiches', 31);
 
--- Create the cart_items table
-CREATE TABLE IF NOT EXISTS cart_items (
-    cart_item_id SERIAL PRIMARY KEY,
-    product_id INTEGER REFERENCES store_products(product_id) ON DELETE CASCADE,
-    item_quantity INTEGER NOT NULL,
-    total_item_price NUMERIC(10, 2) NOT NULL
-);
+-- ==================================
+-- ==================================
 
 -- Create the users table
 CREATE TABLE IF NOT EXISTS users (
@@ -39,19 +34,32 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Update cart_items to associate with a user
-ALTER TABLE cart_items
-ADD COLUMN user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE;
-
 -- Add name column to users
 ALTER TABLE users ADD COLUMN name VARCHAR(255);
 
 -- Add role column to users
 ALTER TABLE users ADD COLUMN role VARCHAR(50);
 
+-- ==================================
+-- ==================================
+
+-- Create the cart_items table
+CREATE TABLE IF NOT EXISTS cart_items (
+    cart_item_id SERIAL PRIMARY KEY,
+    product_id INTEGER REFERENCES store_products(product_id) ON DELETE CASCADE,
+    item_quantity INTEGER NOT NULL,
+    total_item_price NUMERIC(10, 2) NOT NULL
+);
+
+-- Update cart_items to associate with a user
+ALTER TABLE cart_items
+ADD COLUMN user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE;
+
+-- ==================================
+-- ==================================
 
 -- FOR RECOMMENDATIONS
--- Create product similarities table for recommendations
+-- Create product similarities table for recommendations (0-1 scale)
 CREATE TABLE IF NOT EXISTS product_similarities (
     product_id INTEGER REFERENCES store_products(product_id) ON DELETE CASCADE,
     similar_product_id INTEGER REFERENCES store_products(product_id) ON DELETE CASCADE,
@@ -64,7 +72,10 @@ CREATE TABLE IF NOT EXISTS product_similarities (
 CREATE INDEX IF NOT EXISTS idx_product_similarities_product_id 
 ON product_similarities(product_id);
 
--- Create materialized view for popular products (to avoid recalculating similarity scores)
+-- ==================================
+-- ==================================
+
+-- Create materialized view for popular products (to avoid recalculating similarity scores for every user)
 CREATE MATERIALIZED VIEW IF NOT EXISTS popular_products AS
 SELECT 
     sp.product_id as id,
@@ -77,6 +88,9 @@ FROM store_products sp
 LEFT JOIN product_similarities ps ON sp.product_id = ps.product_id
 GROUP BY sp.product_id, sp.product_name, sp.product_category, sp.product_price, sp.product_img
 ORDER BY similarity_count DESC;
+
+-- ==================================
+-- ==================================
 
 -- Enable the pgcrypto extension to hash passwords
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
