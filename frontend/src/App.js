@@ -4,6 +4,7 @@ import Login from "./components/Login";
 import Store from "./components/Store";
 import Signup from "./components/Signup";
 import ControlPanel from "./components/ControlPanel";
+import ProductDetail from "./components/ProductDetail";
 import { AuthProvider } from "./components/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -22,6 +23,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["customer"]}>
                 <Store />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/store/product/:productId"
+            element={
+              <ProtectedRoute allowedRoles={["customer"]}>
+                <ProductDetail />
               </ProtectedRoute>
             }
           />

@@ -75,4 +75,30 @@ router.post("/cart-recommendations", async (req, res) => {
   }
 });
 
+router.get("/product/:productId", async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    const recommendations = await db.query(
+      `
+      SELECT DISTINCT ON (ps.similar_product_id)
+        sp.*,
+        ps.similarity_score
+      FROM product_similarities ps
+      JOIN store_products sp ON sp.product_id = ps.similar_product_id
+      WHERE ps.product_id = $1
+        AND ps.similar_product_id != $1
+      ORDER BY ps.similar_product_id, ps.similarity_score DESC
+      LIMIT 6
+      `,
+      [productId],
+    );
+
+    res.json(recommendations.rows);
+  } catch (error) {
+    console.error("Error getting product recommendations:", error);
+    res.status(500).json({ error: "Failed to get recommendations" });
+  }
+});
+
 export default router;

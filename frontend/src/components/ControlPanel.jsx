@@ -10,6 +10,7 @@ export default function ControlPanel() {
     product_price: "",
     product_category: "",
     product_img: "",
+    stock_quantity: "",
   });
   const [editingId, setEditingId] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -86,6 +87,7 @@ export default function ControlPanel() {
       product_price: product.product_price.toString(),
       product_category: product.product_category,
       product_img: product.product_img,
+      stock_quantity: String(product.stock_quantity ?? 0),
     });
     setEditingId(product.product_id);
   };
@@ -108,6 +110,7 @@ export default function ControlPanel() {
       product_price: "",
       product_category: "",
       product_img: "",
+      stock_quantity: "",
     });
     setEditingId(null);
   };
@@ -188,6 +191,19 @@ export default function ControlPanel() {
               />
             </div>
 
+            <div className="form-group">
+              <label>Stock Quantity</label>
+              <input
+                type="number"
+                name="stock_quantity"
+                value={formData.stock_quantity}
+                onChange={handleInputChange}
+                min="0"
+                step="1"
+                required
+              />
+            </div>
+
             <div className="form-actions">
               <button type="submit" className="btn primary">
                 {editingId ? "Update" : "Add"} Product
@@ -218,6 +234,7 @@ export default function ControlPanel() {
                   <th>Product</th>
                   <th>Category</th>
                   <th>Price</th>
+                  <th>Stock</th>
                   <th>Image</th>
                   <th>Actions</th>
                 </tr>
@@ -232,6 +249,11 @@ export default function ControlPanel() {
                       parseFloat(product.product_price) !== 0
                         ? "$" + parseFloat(product.product_price).toFixed(2)
                         : "N/A"}
+                    </td>
+                    <td>
+                      {Number.isFinite(Number(product.stock_quantity))
+                        ? Number(product.stock_quantity)
+                        : 0}
                     </td>
                     <td>
                       <img

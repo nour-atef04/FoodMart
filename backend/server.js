@@ -103,6 +103,19 @@ const clearAuthCookie = (res) => {
   });
 };
 
+const parseStockQuantity = (value, fallback = 0) => {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+
+  return parsed;
+};
+
 const authenticateToken = async (req, res, next) => {
   try {
     const token = readCookie(req, COOKIE_NAME);
@@ -246,6 +259,28 @@ app.get("/api/storeProducts", authenticateToken, async (req, res) => {
   }
 });
 
+app.get("/api/storeProducts/:product_id", authenticateToken, async (req, res) => {
+  const { product_id } = req.params;
+
+  try {
+    const result = await db.query(
+      "SELECT * FROM store_products WHERE product_id = $1",
+      [product_id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch product",
+      error: error.message,
+    });
+  }
+});
+
 // GET ALL CART ITEMS
 app.get("/api/cartItems", authenticateToken, requireRole("customer"), async (req, res) => {
   try {
@@ -278,18 +313,48 @@ app.post("/api/cartItems", authenticateToken, requireRole("customer"), async (re
   const { product_id, item_quantity, total_item_price } = req.body;
   const user_id = req.user.user_id;
   try {
+    const requestedQuantity = Number.parseInt(item_quantity, 10);
+    if (!Number.isFinite(requestedQuantity) || requestedQuantity <= 0) {
+      return res.status(400).json({ message: "Item quantity must be at least 1" });
+    }
+
+    const productResult = await db.query(
+      "SELECT stock_quantity, product_price FROM store_products WHERE product_id = $1",
+      [product_id],
+    );
+
+    if (productResult.rows.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const availableStock = Number.parseInt(productResult.rows[0].stock_quantity, 10) || 0;
+    const productPrice = Number(productResult.rows[0].product_price) || 0;
     const existingItem = await db.query(
       "SELECT * FROM cart_items WHERE product_id = $1 AND user_id = $2",
       [product_id, user_id],
     );
 
+    const currentCartQuantity =
+      existingItem.rows.length > 0
+        ? Number.parseInt(existingItem.rows[0].item_quantity, 10) || 0
+        : 0;
+    const remainingStock = availableStock - currentCartQuantity;
+
+    if (remainingStock <= 0 || requestedQuantity > remainingStock) {
+      return res.status(409).json({
+        message: "Not enough stock available",
+        availableStock,
+      });
+    }
+
     if (existingItem.rows.length > 0) {
-      const currentQuantity = parseInt(existingItem.rows[0].item_quantity, 10);
+      const currentQuantity = currentCartQuantity;
       const currentTotalPrice = parseFloat(
         existingItem.rows[0].total_item_price,
       );
-      const new_item_quantity = currentQuantity + item_quantity;
-      const new_total_item_price = currentTotalPrice + total_item_price;
+      const new_item_quantity = currentQuantity + requestedQuantity;
+      const new_total_item_price =
+        currentTotalPrice + productPrice * requestedQuantity;
 
       // Update the existing item
       await db.query(
@@ -301,7 +366,7 @@ app.post("/api/cartItems", authenticateToken, requireRole("customer"), async (re
     else {
       await db.query(
         "INSERT INTO cart_items (user_id, product_id, item_quantity, total_item_price) VALUES($1, $2, $3, $4)",
-        [user_id, product_id, item_quantity, total_item_price],
+        [user_id, product_id, requestedQuantity, productPrice * requestedQuantity],
       );
     }
 
@@ -310,6 +375,77 @@ app.post("/api/cartItems", authenticateToken, requireRole("customer"), async (re
     res
       .status(500)
       .json({ message: "Cart update error", error: error.message });
+  }
+});
+
+app.post("/api/checkout", authenticateToken, requireRole("customer"), async (req, res) => {
+  const userId = req.user.user_id;
+
+  try {
+    await db.query("BEGIN");
+
+    const cartResult = await db.query(
+      `SELECT 
+        cart_items.product_id,
+        cart_items.item_quantity,
+        store_products.stock_quantity
+      FROM cart_items
+      JOIN store_products
+        ON cart_items.product_id = store_products.product_id
+      WHERE cart_items.user_id = $1
+      FOR UPDATE OF store_products`,
+      [userId],
+    );
+
+    if (cartResult.rows.length === 0) {
+      await db.query("COMMIT");
+      return res.status(200).json({ message: "Cart already empty" });
+    }
+
+    for (const item of cartResult.rows) {
+      const stockQuantity = Number.parseInt(item.stock_quantity, 10) || 0;
+      const cartQuantity = Number.parseInt(item.item_quantity, 10) || 0;
+
+      if (stockQuantity < cartQuantity) {
+        await db.query("ROLLBACK");
+        return res.status(409).json({
+          message: "One or more products are out of stock",
+          product_id: item.product_id,
+        });
+      }
+
+      const updateResult = await db.query(
+        `UPDATE store_products
+         SET stock_quantity = stock_quantity - $1
+         WHERE product_id = $2 AND stock_quantity >= $1
+         RETURNING stock_quantity`,
+        [cartQuantity, item.product_id],
+      );
+
+      if (updateResult.rows.length === 0) {
+        await db.query("ROLLBACK");
+        return res.status(409).json({
+          message: "One or more products are out of stock",
+          product_id: item.product_id,
+        });
+      }
+    }
+
+    await db.query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
+    await db.query("COMMIT");
+
+    res.status(200).json({ message: "Checkout completed successfully" });
+  } catch (error) {
+    try {
+      await db.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Rollback error:", rollbackError);
+    }
+
+    res.status(500).json({
+      message: "Checkout failed",
+      error: error.message,
+    });
   }
 });
 
@@ -336,6 +472,7 @@ app.post("/api/storeProducts", authenticateToken, requireRole("employee"), async
     product_price,
     product_category,
     product_img,
+    stock_quantity,
   } = req.body;
 
   console.log("Adding new product:", product_name);
@@ -356,15 +493,21 @@ app.post("/api/storeProducts", authenticateToken, requireRole("employee"), async
     });
   }
 
+  const parsedStockQuantity = parseStockQuantity(stock_quantity, 0);
+  if (parsedStockQuantity === null) {
+    return res.status(400).json({ message: "Stock quantity must be a non-negative number" });
+  }
+
   try {
     const result = await db.query(
-      "INSERT INTO store_products (product_name, product_description, product_img, product_price, product_category) VALUES ($1, $2, $3, $4, $5) RETURNING product_id, product_name, product_description, product_img, product_price, product_category",
+      "INSERT INTO store_products (product_name, product_description, product_img, product_price, product_category, stock_quantity) VALUES ($1, $2, $3, $4, $5, $6) RETURNING product_id, product_name, product_description, product_img, product_price, product_category, stock_quantity",
       [
         product_name,
         product_description,
         product_img,
         product_price,
         product_category,
+        parsedStockQuantity,
       ],
     );
 
@@ -402,6 +545,7 @@ app.put("/api/storeProducts/:product_id", authenticateToken, requireRole("employ
     product_img,
     product_price,
     product_category,
+    stock_quantity,
   } = req.body;
 
   // Basic validation
@@ -418,15 +562,21 @@ app.put("/api/storeProducts/:product_id", authenticateToken, requireRole("employ
     });
   }
 
+  const parsedStockQuantity = parseStockQuantity(stock_quantity);
+  if (parsedStockQuantity === null) {
+    return res.status(400).json({ message: "Stock quantity must be a non-negative number" });
+  }
+
   try {
     const result = await db.query(
-      "UPDATE store_products SET product_name = $1, product_description = $2, product_img = $3, product_price = $4, product_category = $5 WHERE product_id = $6 RETURNING product_id, product_name, product_description, product_img, product_price, product_category",
+      "UPDATE store_products SET product_name = $1, product_description = $2, product_img = $3, product_price = $4, product_category = $5, stock_quantity = $6 WHERE product_id = $7 RETURNING product_id, product_name, product_description, product_img, product_price, product_category, stock_quantity",
       [
         product_name,
         product_description,
         product_img,
         product_price,
         product_category,
+        parsedStockQuantity,
         product_id,
       ],
     );

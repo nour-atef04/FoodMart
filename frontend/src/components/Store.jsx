@@ -84,10 +84,14 @@ const productsReducer = (state, action) => {
 };
 
 function Store() {
-  const { storeProducts } = useStoreProducts(); // CUSTOM HOOK TO GET STORE PRODUCTS FROM DATABASE
+  const {
+    storeProducts,
+    refetchStoreProducts,
+  } = useStoreProducts(); // CUSTOM HOOK TO GET STORE PRODUCTS FROM DATABASE
   const { fetchedCartItems } = useCartItems();
 
   const [cartItems, cartDispatch] = useReducer(cartReducer, fetchedCartItems);
+  const [isCheckingOut, setIsCheckingOut] = React.useState(false);
   const [{ productsToDisplay, searched }, productsDispatch] = useReducer(
     productsReducer,
     {
@@ -115,6 +119,26 @@ function Store() {
       (product) => product.product_id === id
     );
     if (productToAdd) {
+      const availableStock = Number(productToAdd.stock_quantity) || 0;
+      const currentCartItem = cartItems.find(
+        (item) => item.product_id === productToAdd.product_id
+      );
+      const currentCartQuantity = currentCartItem
+        ? Number(currentCartItem.item_quantity) || 0
+        : 0;
+      const requestedQuantity = Number(itemQuantity) || 0;
+      const remainingStock = availableStock - currentCartQuantity;
+
+      if (availableStock <= 0) {
+        alert("This product is out of stock.");
+        return;
+      }
+
+      if (requestedQuantity > remainingStock) {
+        alert("You cannot add more than the available stock.");
+        return;
+      }
+
       const product_img = productToAdd.product_img;
       const product_name = productToAdd.product_name;
       const product_price = productToAdd.product_price;
@@ -124,27 +148,55 @@ function Store() {
         product_name,
         product_price,
         product_id: productToAdd.product_id,
-        item_quantity: itemQuantity,
-        total_item_price: productToAdd.product_price * itemQuantity,
+        item_quantity: requestedQuantity,
+        total_item_price: productToAdd.product_price * requestedQuantity,
       };
-
-      cartDispatch({ type: "addItem", payLoad: newItem });
 
       try {
         await axios.post("http://localhost:5000/api/cartItems", newItem);
+        cartDispatch({ type: "addItem", payLoad: newItem });
         console.log("Saved to database successfully!");
       } catch (error) {
+        if (error.response?.status === 409) {
+          alert(error.response.data.message || "Not enough stock available");
+          return;
+        }
         console.error("Error saving item to cart database: ", error);
       }
     }
   }
 
   async function removeItemFromCart(cartItemId) {
-    cartDispatch({ type: "removeItem", payLoad: cartItemId });
     try {
       await axios.delete(`http://localhost:5000/api/cartItems/${cartItemId}`);
+      cartDispatch({ type: "removeItem", payLoad: cartItemId });
     } catch (error) {
       console.error("Error deleting item from cart database: ", error);
+    }
+  }
+
+  async function handleCheckout() {
+    if (cartItems.length === 0) {
+      return;
+    }
+
+    try {
+      setIsCheckingOut(true);
+      await axios.post("http://localhost:5000/api/checkout");
+      cartDispatch({ type: "setCartItems", payLoad: [] });
+      await refetchStoreProducts();
+      alert("Checkout complete. Your cart has been cleared.");
+    } catch (error) {
+      if (error.response?.status === 409) {
+        alert(error.response.data.message || "Some products are out of stock");
+        await refetchStoreProducts();
+        return;
+      }
+
+      console.error("Checkout error:", error);
+      alert("Checkout failed. Please try again.");
+    } finally {
+      setIsCheckingOut(false);
     }
   }
 
@@ -197,6 +249,8 @@ function Store() {
       <NavBar
         cartItems={cartItems}
         removeItemFromCart={removeItemFromCart}
+        handleCheckout={handleCheckout}
+        checkoutLoading={isCheckingOut}
         role="customer"
         addItemToCart={addItemToCart}
       >
@@ -218,12 +272,13 @@ function Store() {
       />
       <CardGrid storeProducts={storeProducts}>
         {productsToDisplay.map((storeProduct, index) => (
-          <div className="col" key={index}>
+          <div className="col" key={storeProduct.product_id}>
             <Card
               storeProductId={storeProduct.product_id}
               storeProductImg={storeProduct.product_img}
               storeProductName={storeProduct.product_name}
               storeProductPrice={storeProduct.product_price}
+              stockQuantity={storeProduct.stock_quantity}
               addItemToCart={addItemToCart}
             />
           </div>

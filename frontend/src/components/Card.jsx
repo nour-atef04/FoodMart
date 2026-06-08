@@ -1,49 +1,100 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Card({
   storeProductId,
   storeProductImg,
   storeProductName,
   storeProductPrice,
+  stockQuantity,
   addItemToCart,
 }) {
+  const navigate = useNavigate();
+  const [isHovered, setIsHovered] = useState(false);
+  const isOutOfStock = Number(stockQuantity) <= 0;
+  const cardImageStyle = {
+    width: "100%",
+    height: "10rem",
+    objectFit: "cover",
+    filter: isOutOfStock ? "grayscale(100%)" : "none",
+    opacity: isOutOfStock ? 0.5 : 1,
+  };
+
   function AddItem(id, quantity) {
     addItemToCart(id, quantity);
   }
 
+  function handleCardClick() {
+    navigate(`/store/product/${storeProductId}`);
+  }
+
+  function handleCardKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      navigate(`/store/product/${storeProductId}`);
+    }
+  }
+
   return (
-    <div className="card" style={{ width: "100%", height: "100%" }}>
+    <div
+      className="card"
+      role="link"
+      tabIndex={0}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        width: "100%",
+        height: "100%",
+        cursor: "pointer",
+        transition: "transform 0.2s ease, box-shadow 0.2s ease",
+        transform: isHovered ? "translateY(-6px)" : "translateY(0)",
+        boxShadow: isHovered ? "0 14px 28px rgba(88, 71, 60, 0.14)" : "none",
+      }}
+    >
       <img
         src={storeProductImg}
         className="card-img-top"
         alt={storeProductName}
-        style={{
-          width: "100%",
-          height: "10rem",
-          objectFit: "cover",
-        }}
+        style={cardImageStyle}
       />
-      <div className="card-body" style={{color: "#58473C"}}>
+      <div className="card-body" style={{ color: "#58473C" }}>
         <h5 className="card-title">{storeProductName}</h5>
         <h5 className="card-text">${storeProductPrice}</h5>
+        <p
+          style={{
+            color: isOutOfStock ? "#8A7D70" : "#7C8B54",
+            fontWeight: 600,
+            marginBottom: "12px",
+          }}
+        >
+          {isOutOfStock ? "Out of stock" : `${Number(stockQuantity)} in stock`}
+        </p>
 
-        <AddToCart id={storeProductId} AddItem={AddItem} />
+        <AddToCart id={storeProductId} AddItem={AddItem} stockQuantity={stockQuantity} />
       </div>
     </div>
   );
 }
 
-function AddToCart({ id, AddItem }) {
+function AddToCart({ id, AddItem, stockQuantity }) {
   const [buttonColor, setButtonColor] = useState("grey");
+  const maxQuantity = Math.max(0, Number(stockQuantity) || 0);
+  const [quantity, setQuantity] = useState(maxQuantity > 0 ? 1 : 0);
 
-  const [quantity, setQuantity] = useState(1);
+  useEffect(() => {
+    setQuantity(maxQuantity > 0 ? 1 : 0);
+  }, [maxQuantity]);
 
   function incrementQuantity() {
-    setQuantity((prevQuantity) => prevQuantity + 1);
+    setQuantity((prevQuantity) => Math.min(prevQuantity + 1, maxQuantity));
   }
 
   function decrementQuantity() {
-    setQuantity((prevQuantity) => (prevQuantity > 1 ? prevQuantity - 1 : 1));
+    setQuantity((prevQuantity) =>
+      maxQuantity <= 0 ? 0 : prevQuantity > 1 ? prevQuantity - 1 : 1,
+    );
   }
 
   function handleMouseOver() {
@@ -55,6 +106,10 @@ function AddToCart({ id, AddItem }) {
   }
 
   function handleClick() {
+    if (maxQuantity <= 0) {
+      return;
+    }
+
     AddItem(id, quantity);
     setQuantity(1);
   }
@@ -70,6 +125,8 @@ function AddToCart({ id, AddItem }) {
         decrementQuantity={decrementQuantity}
         incrementQuantity={incrementQuantity}
         quantity={quantity}
+        disabled={maxQuantity <= 0}
+        isOutOfStock={maxQuantity <= 0}
       />
       <button
         type="button"
@@ -77,8 +134,12 @@ function AddToCart({ id, AddItem }) {
         style={buttonStyle}
         onMouseOver={handleMouseOver}
         onMouseOut={handleMouseOut}
-        onClick={handleClick}
+        onClick={(event) => {
+          event.stopPropagation();
+          handleClick();
+        }}
         aria-label="Add to Cart"
+        disabled={maxQuantity <= 0}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -96,7 +157,13 @@ function AddToCart({ id, AddItem }) {
   );
 }
 
-function QuantitySetter({ decrementQuantity, incrementQuantity, quantity }) {
+function QuantitySetter({
+  decrementQuantity,
+  incrementQuantity,
+  quantity,
+  disabled,
+  isOutOfStock,
+}) {
   const buttonStyle = {
     width: "2rem",
     height: "2rem",
@@ -107,9 +174,13 @@ function QuantitySetter({ decrementQuantity, incrementQuantity, quantity }) {
       <button
         type="button"
         className="btn btn-light p-2"
-        onClick={decrementQuantity}
+        onClick={(event) => {
+          event.stopPropagation();
+          decrementQuantity();
+        }}
         aria-label="Decrease quantity"
         style={buttonStyle}
+        disabled={disabled}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -127,14 +198,18 @@ function QuantitySetter({ decrementQuantity, incrementQuantity, quantity }) {
         </svg>
       </button>
 
-      <span style={{ margin: "10px" }}>{quantity}</span>
+      <span style={{ margin: "10px" }}>{isOutOfStock ? 0 : quantity}</span>
 
       <button
         type="button"
         className="btn btn-light p-2"
-        onClick={incrementQuantity}
+        onClick={(event) => {
+          event.stopPropagation();
+          incrementQuantity();
+        }}
         aria-label="Increase quantity"
         style={buttonStyle}
+        disabled={disabled}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

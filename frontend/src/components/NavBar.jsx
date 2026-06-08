@@ -8,6 +8,8 @@ import { AuthContext } from "./AuthContext";
 export default function NavBar({
   cartItems,
   removeItemFromCart,
+  handleCheckout,
+  checkoutLoading = false,
   children,
   role,
   addItemToCart,
@@ -63,6 +65,8 @@ export default function NavBar({
                     cartItems={cartItems}
                     removeItemFromCart={removeItem}
                     addItemToCart={addItemToCart}
+                    handleCheckout={handleCheckout}
+                    checkoutLoading={checkoutLoading}
                   />
                 </li>
               )}
@@ -147,7 +151,13 @@ function UserMenuButton({ title }) {
 
 //WHEN CLICKED, VIEW THE ITEMS INSIDE THE CART
 
-function ViewCart({ cartItems, removeItemFromCart, addItemToCart }) {
+function ViewCart({
+  cartItems,
+  removeItemFromCart,
+  addItemToCart,
+  handleCheckout,
+  checkoutLoading,
+}) {
   const [visibility, setVisibility] = useState("none");
   const [totalCheckoutPrice, setTotalCheckoutPrice] = useState(0);
 
@@ -183,6 +193,8 @@ function ViewCart({ cartItems, removeItemFromCart, addItemToCart }) {
         totalCheckoutPrice={totalCheckoutPrice}
         removeItemFromCart={removeItemFromCart}
         addItemToCart={addItemToCart}
+        handleCheckout={handleCheckout}
+        checkoutLoading={checkoutLoading}
       />
     </>
   );
@@ -195,6 +207,8 @@ function CartList({
   totalCheckoutPrice,
   removeItemFromCart,
   addItemToCart,
+  handleCheckout,
+  checkoutLoading,
   children,
 }) {
   const cartListDivStyle = {
@@ -268,6 +282,8 @@ function CartList({
 
           <button
             className="btn"
+            onClick={handleCheckout}
+            disabled={checkoutLoading}
             style={{
               backgroundColor: "orange",
               color: "white",
@@ -279,7 +295,7 @@ function CartList({
               marginBottom: "20px",
             }}
           >
-            Continue To Checkout
+            {checkoutLoading ? "Checking Out..." : "Checkout"}
           </button>
 
           <hr

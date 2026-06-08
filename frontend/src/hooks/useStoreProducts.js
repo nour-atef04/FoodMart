@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
 const useStoreProducts = () => {
@@ -6,22 +6,27 @@ const useStoreProducts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const response = await axios.get("http://localhost:5000/api/storeProducts");
-        setStoreProducts(response.data);
-      } catch (error) {
-        setError(error);
-      } finally {
-        setLoading(false);
-      }
-    }
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-    fetchProducts();
+    try {
+      const response = await axios.get(
+        "http://localhost:5000/api/storeProducts",
+      );
+      setStoreProducts(response.data);
+    } catch (requestError) {
+      setError(requestError);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return {storeProducts, loading, error};
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  return { storeProducts, loading, error, refetchStoreProducts: fetchProducts };
 
 };
 

@@ -5,19 +5,23 @@ CREATE TABLE IF NOT EXISTS store_products (
     product_name VARCHAR(255) NOT NULL,
     product_price NUMERIC(10, 2) NOT NULL,
     product_category VARCHAR(100) NOT NULL,
-    product_description TEXT
+    product_description TEXT,
+    stock_quantity INTEGER NOT NULL DEFAULT 0
 );
 
 -- Insert sample data into store_products table
-INSERT INTO store_products (product_img, product_name, product_price, product_category, product_description)
+ALTER TABLE store_products
+ADD COLUMN IF NOT EXISTS stock_quantity INTEGER NOT NULL DEFAULT 0;
+
+INSERT INTO store_products (product_img, product_name, product_price, product_category, product_description, stock_quantity)
 VALUES
-    ('https://www.goodfruit.com/wp-content/uploads/snowflakeApple.jpg', 'Red Apples', 19.00, 'Fruits', 'Fresh, crisp red apples perfect for snacking or baking'),
-    ('https://media.istockphoto.com/id/1184345169/photo/banana.jpg?s=612x612&w=0&k=20&c=NdHyi6Jd9y1855Q5mLO2tV_ZRnaJGtZGCSMMT7oxdF4=', 'Bananas', 24.00, 'Fruits', 'Sweet and ripe yellow bananas rich in potassium'),
-    ('https://st2.depositphotos.com/16122460/42446/i/450/depositphotos_424463870-stock-photo-jug-glass-fresh-milk-white.jpg', 'Milk', 15.50, 'Dairy', 'Fresh whole milk from local dairy farms'),
-    ('https://verdimed.com/wp-content/uploads/2021/10/product-others-carrots.jpg', 'Carrots', 2.00, 'Vegetables', 'Organic fresh carrots, great for salads and cooking'),
-    ('https://img.freepik.com/premium-photo/potato-chips-white-background_55883-8452.jpg', 'Chips', 5.50, 'Snacks', 'Crispy potato chips with a perfect salt balance'),
-    ('https://img.freepik.com/premium-photo/smooth-butter-elegance_996379-9801.jpg', 'Butter', 11.50, 'Dairy', 'Creamy unsalted butter perfect for cooking and baking'),
-    ('https://img.freepik.com/premium-photo/plain-lettuce-isolated-white-background_434193-7334.jpg', 'Lettuce', 5.00, 'Vegetables', 'Fresh crisp lettuce leaves for salads and sandwiches');
+    ('https://www.goodfruit.com/wp-content/uploads/snowflakeApple.jpg', 'Red Apples', 19.00, 'Fruits', 'Fresh, crisp red apples perfect for snacking or baking', 42),
+    ('https://media.istockphoto.com/id/1184345169/photo/banana.jpg?s=612x612&w=0&k=20&c=NdHyi6Jd9y1855Q5mLO2tV_ZRnaJGtZGCSMMT7oxdF4=', 'Bananas', 24.00, 'Fruits', 'Sweet and ripe yellow bananas rich in potassium', 36),
+    ('https://st2.depositphotos.com/16122460/42446/i/450/depositphotos_424463870-stock-photo-jug-glass-fresh-milk-white.jpg', 'Milk', 15.50, 'Dairy', 'Fresh whole milk from local dairy farms', 18),
+    ('https://verdimed.com/wp-content/uploads/2021/10/product-others-carrots.jpg', 'Carrots', 2.00, 'Vegetables', 'Organic fresh carrots, great for salads and cooking', 54),
+    ('https://img.freepik.com/premium-photo/potato-chips-white-background_55883-8452.jpg', 'Chips', 5.50, 'Snacks', 'Crispy potato chips with a perfect salt balance', 27),
+    ('https://img.freepik.com/premium-photo/smooth-butter-elegance_996379-9801.jpg', 'Butter', 11.50, 'Dairy', 'Creamy unsalted butter perfect for cooking and baking', 12),
+    ('https://img.freepik.com/premium-photo/plain-lettuce-isolated-white-background_434193-7334.jpg', 'Lettuce', 5.00, 'Vegetables', 'Fresh crisp lettuce leaves for salads and sandwiches', 31);
 
 -- Create the cart_items table
 CREATE TABLE IF NOT EXISTS cart_items (
