@@ -51,12 +51,11 @@ function Signup() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
           name: formData.name,
-          role: "customer",
-          //role: formData.role,
         }),
       });
 
@@ -73,7 +72,7 @@ function Signup() {
       //   login(data);
       // } else {
         navigate("/store");
-        login(data);
+        login(data.user);
       //}
     } catch (err) {
       setError(err.message || "Registration failed. Please try again.");

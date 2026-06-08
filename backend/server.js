@@ -3,6 +3,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import pg from "pg";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import recommendationsRouter from "./routes/recommendations.js";
 import { exec } from "child_process";
@@ -13,8 +14,17 @@ dotenv.config();
 
 const app = express();
 const port = 5000;
+const COOKIE_NAME = "foodmart_auth";
+const AUTH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+const isProduction = process.env.NODE_ENV === "production";
+const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 
-app.use(cors());
+app.use(
+  cors({
+    origin: frontendOrigin,
+    credentials: true,
+  }),
+);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.use(bodyParser.json());
@@ -35,15 +45,114 @@ db.connect((err) => {
   }
 });
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: "lax",
+  path: "/",
+  maxAge: AUTH_COOKIE_MAX_AGE,
+};
+
+const readCookie = (req, cookieName) => {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const cookies = cookieHeader.split(";").reduce((acc, cookiePart) => {
+    const [rawKey, ...rawValue] = cookiePart.trim().split("=");
+    if (!rawKey) {
+      return acc;
+    }
+
+    acc[rawKey] = decodeURIComponent(rawValue.join("="));
+    return acc;
+  }, {});
+
+  return cookies[cookieName] || null;
+};
+
+const signAuthToken = (user) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not configured");
+  }
+
+  return jwt.sign(
+    {
+      user_id: user.user_id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    },
+  );
+};
+
+const setAuthCookie = (res, user) => {
+  const token = signAuthToken(user);
+  res.cookie(COOKIE_NAME, token, cookieOptions);
+};
+
+const clearAuthCookie = (res) => {
+  res.clearCookie(COOKIE_NAME, {
+    ...cookieOptions,
+    maxAge: undefined,
+  });
+};
+
+const authenticateToken = async (req, res, next) => {
+  try {
+    const token = readCookie(req, COOKIE_NAME);
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ message: "JWT secret is not configured" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const result = await db.query(
+      "SELECT user_id, email, name, role FROM users WHERE user_id = $1",
+      [decoded.user_id],
+    );
+
+    if (result.rows.length === 0) {
+      clearAuthCookie(res);
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    req.user = result.rows[0];
+    next();
+  } catch (error) {
+    clearAuthCookie(res);
+    return res.status(401).json({ message: "Authentication required" });
+  }
+};
+
+const requireRole = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ message: "You are not authorized to access this resource" });
+    }
+
+    return next();
+  };
+};
+
 // REGISTER
 app.post("/api/register", async (req, res) => {
-  const { email, password, name, role } = req.body;
+  const { email, password, name } = req.body;
+  const role = "customer";
 
   // Basic validation
-  if (!email || !password || !name || !role) {
+  if (!email || !password || !name) {
     return res
       .status(400)
-      .json({ message: "Name, email, password and role are required" });
+      .json({ message: "Name, email and password are required" });
   }
 
   try {
@@ -62,13 +171,11 @@ app.post("/api/register", async (req, res) => {
     );
 
     const user = result.rows[0];
+    setAuthCookie(res, user);
 
-    res.status(200).json({
+    res.status(201).json({
       message: "User registered successfully",
-      user_id: user.user_id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
+      user,
     });
   } catch (error) {
     console.error("Registration error:", error);
@@ -83,6 +190,10 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   const { email, password, role } = req.body;
 
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
+
   try {
     const result = await db.query("SELECT * FROM users WHERE email = $1", [
       email,
@@ -94,13 +205,19 @@ app.post("/api/login", async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (isMatch && role === user.role) {
-      res.status(200).json({
-        message: "Login successful",
+    if (isMatch && (!role || role === user.role)) {
+      const authUser = {
         user_id: user.user_id,
         email: user.email,
         name: user.name,
         role: user.role,
+      };
+
+      setAuthCookie(res, authUser);
+
+      res.status(200).json({
+        message: "Login successful",
+        user: authUser,
       });
     } else {
       res.status(401).json({ message: "Invalid email or password" });
@@ -110,8 +227,17 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+app.post("/api/logout", (req, res) => {
+  clearAuthCookie(res);
+  res.status(200).json({ message: "Logged out successfully" });
+});
+
+app.get("/api/me", authenticateToken, (req, res) => {
+  res.status(200).json({ user: req.user });
+});
+
 // GET ALL STORE PRODUCTS
-app.get("/api/storeProducts", async (req, res) => {
+app.get("/api/storeProducts", authenticateToken, async (req, res) => {
   try {
     const result = await db.query("SELECT * FROM store_products");
     res.status(200).json(result.rows); // RETURN ALL STORE PRODUCTS
@@ -121,9 +247,7 @@ app.get("/api/storeProducts", async (req, res) => {
 });
 
 // GET ALL CART ITEMS
-app.get("/api/cartItems/:user_id", async (req, res) => {
-  const { user_id } = req.params;
-
+app.get("/api/cartItems", authenticateToken, requireRole("customer"), async (req, res) => {
   try {
     const result = await db.query(
       `SELECT 
@@ -141,7 +265,7 @@ app.get("/api/cartItems/:user_id", async (req, res) => {
         cart_items.product_id = store_products.product_id
       WHERE 
         cart_items.user_id = $1`,
-      [user_id],
+      [req.user.user_id],
     );
     res.status(200).json(result.rows); // RETURN ALL CART ITEMS
   } catch (error) {
@@ -150,8 +274,9 @@ app.get("/api/cartItems/:user_id", async (req, res) => {
 });
 
 // POST NEW CART ITEM OR UPDATE IF EXISTS
-app.post("/api/cartItems", async (req, res) => {
-  const { user_id, product_id, item_quantity, total_item_price } = req.body;
+app.post("/api/cartItems", authenticateToken, requireRole("customer"), async (req, res) => {
+  const { product_id, item_quantity, total_item_price } = req.body;
+  const user_id = req.user.user_id;
   try {
     const existingItem = await db.query(
       "SELECT * FROM cart_items WHERE product_id = $1 AND user_id = $2",
@@ -189,8 +314,9 @@ app.post("/api/cartItems", async (req, res) => {
 });
 
 // DELETE CART ITEM
-app.delete("/api/cartItems/:user_id/:product_id", async (req, res) => {
-  const { user_id, product_id } = req.params;
+app.delete("/api/cartItems/:product_id", authenticateToken, requireRole("customer"), async (req, res) => {
+  const { product_id } = req.params;
+  const user_id = req.user.user_id;
   try {
     await db.query(
       "DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2",
@@ -203,7 +329,7 @@ app.delete("/api/cartItems/:user_id/:product_id", async (req, res) => {
 });
 
 // ADD NEW PRODUCT (Admin Only)
-app.post("/api/storeProducts", async (req, res) => {
+app.post("/api/storeProducts", authenticateToken, requireRole("employee"), async (req, res) => {
   const {
     product_name,
     product_description,
@@ -268,7 +394,7 @@ app.post("/api/storeProducts", async (req, res) => {
 });
 
 // UPDATE PRODUCT (Admin Only)
-app.put("/api/storeProducts/:product_id", async (req, res) => {
+app.put("/api/storeProducts/:product_id", authenticateToken, requireRole("employee"), async (req, res) => {
   const { product_id } = req.params;
   const {
     product_name,
@@ -334,7 +460,7 @@ app.put("/api/storeProducts/:product_id", async (req, res) => {
 });
 
 // DELETE PRODUCT (Admin Only)
-app.delete("/api/storeProducts/:product_id", async (req, res) => {
+app.delete("/api/storeProducts/:product_id", authenticateToken, requireRole("employee"), async (req, res) => {
   const { product_id } = req.params;
 
   try {

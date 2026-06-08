@@ -11,8 +11,8 @@ import bgImage from "../images/Blog-Post-Featured-Images.webp";
 
 function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("nour@example.com");
-  const [password, setPassword] = useState("qwerty123456");
+  const [email, setEmail] = useState("test@test.com");
+  const [password, setPassword] = useState("123456");
   const [role, setRole] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -28,6 +28,7 @@ function Login() {
       const response = await fetch("http://localhost:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password, role }),
       });
 
@@ -35,11 +36,11 @@ function Login() {
       //console.log(data);
 
       if (response.ok) {
-        if (data.role === "employee") {
-          login(data);
+        if (data.user?.role === "employee") {
+          login(data.user);
           navigate("/control"); // Navigate to control panel for employees
-        } else if (data.role === "customer") {
-          login(data);
+        } else if (data.user?.role === "customer") {
+          login(data.user);
           navigate("/store"); // Navigate to store for customers
         } else {
           setError("Invalid role returned by server.");

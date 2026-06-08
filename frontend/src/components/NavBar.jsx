@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import NavBarButton from "./MyButton";
 import backgroundImg from "../images/diagonal-striped-brick.png";
 import { useNavigate } from "react-router-dom";
 import RecommendedProducts from "./RecommendedProducts";
+import { AuthContext } from "./AuthContext";
 
 export default function NavBar({
   cartItems,
@@ -115,6 +116,7 @@ function ViewUser() {
 
 function UserMenuButton({ title }) {
   const [buttonColor, setButtonColor] = useState("grey");
+  const { logout } = useContext(AuthContext);
   function handleMouseOver() {
     setButtonColor("green");
   }
@@ -125,11 +127,8 @@ function UserMenuButton({ title }) {
 
   const navigate = useNavigate();
 
-  function handleLogout() {
-    // Clear the user data (localStorage or state)
-    //localStorage.removeItem("currentUser");
-
-    // Navigate to login page
+  async function handleLogout() {
+    await logout();
     navigate("/login");
   }
 

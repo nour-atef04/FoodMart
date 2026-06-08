@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useContext } from "react";
+import React, { useEffect, useReducer } from "react";
 import axios from "axios";
 import CardGrid from "./CardGrid";
 import Card from "./Card";
@@ -10,7 +10,6 @@ import Title from "./Title";
 import SortProductsButtons from "./SortProductsButtons";
 import useStoreProducts from "../hooks/useStoreProducts";
 import useCartItems from "../hooks/useCartItems";
-import { AuthContext } from "./AuthContext";
 
 // REDUCER FUNCTION FOR CART ITEMS
 const cartReducer = (state, action) => {
@@ -85,11 +84,6 @@ const productsReducer = (state, action) => {
 };
 
 function Store() {
-  //console.log("id: " + user_id);
-
-  const { currentUser } = useContext(AuthContext); // Get currentUser from context
-  const user_id = currentUser?.user_id;
-
   const { storeProducts } = useStoreProducts(); // CUSTOM HOOK TO GET STORE PRODUCTS FROM DATABASE
   const { fetchedCartItems } = useCartItems();
 
@@ -112,18 +106,11 @@ function Store() {
 
   // LOAD ALL CART ITEMS
   useEffect(() => {
-    if (fetchedCartItems.length > 0) {
-      cartDispatch({ type: "setCartItems", payLoad: fetchedCartItems });
-    }
+    cartDispatch({ type: "setCartItems", payLoad: fetchedCartItems });
   }, [fetchedCartItems]);
 
   // HANDLING CART ITEMS
   async function addItemToCart(id, itemQuantity) {
-    if (!user_id) {
-      alert("Please login to add items to cart");
-      return;
-    }
-
     const productToAdd = storeProducts.find(
       (product) => product.product_id === id
     );
@@ -133,7 +120,6 @@ function Store() {
       const product_price = productToAdd.product_price;
 
       const newItem = {
-        user_id,
         product_img,
         product_name,
         product_price,
@@ -154,13 +140,9 @@ function Store() {
   }
 
   async function removeItemFromCart(cartItemId) {
-    if (!user_id) return;
-
     cartDispatch({ type: "removeItem", payLoad: cartItemId });
     try {
-      await axios.delete(
-        `http://localhost:5000/api/cartItems/${user_id}/${cartItemId}`
-      );
+      await axios.delete(`http://localhost:5000/api/cartItems/${cartItemId}`);
     } catch (error) {
       console.error("Error deleting item from cart database: ", error);
     }

@@ -3,33 +3,37 @@ import axios from "axios";
 import { AuthContext } from "../components/AuthContext";
 
 const useCartItems = () => {
-
   const { currentUser } = useContext(AuthContext);
-  const user_id = currentUser?.user_id;
 
   const [fetchedCartItems, setFetchedCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (user_id) {
-    async function fetchProducts() {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+
+      if (!currentUser || currentUser.role !== "customer") {
+        setFetchedCartItems([]);
+        setLoading(false);
+        return;
+      }
+
       try {
-        const response = await axios.get(`http://localhost:5000/api/cartItems/${user_id}`);
+        const response = await axios.get("http://localhost:5000/api/cartItems");
         setFetchedCartItems(response.data);
-      } catch (error) {
-        setError(error);
+      } catch (requestError) {
+        setError(requestError);
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchProducts();
-  }
-  }, [user_id]);
+  }, [currentUser]);
 
-  return {fetchedCartItems, loading, error};
-
+  return { fetchedCartItems, loading, error };
 };
 
 export default useCartItems;

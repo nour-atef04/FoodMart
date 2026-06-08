@@ -1,9 +1,9 @@
 # HAVE TO RUN THIS SCRIPT TO UPDATE THE RECOMMENDATIONS PERIODICALLY
 # HOW TO RUN (FROM TERMINAL):
 # cd /e/REACT/foodmart
-# source .venv/Scripts/activate
+# .\.venv\Scripts\activate
 # cd backend
-# pip install -r requirements.txt
+# uv pip install -r requirements.txt
 # cd scripts
 # python calculate_recommendations.py
 
@@ -122,8 +122,12 @@ def update_similarities(similarities_df):
                 INSERT INTO product_similarities 
                 (product_id, similar_product_id, similarity_score)
                 VALUES (%s, %s, %s)
-            """, (row['product_id'], row['similar_product_id'], row['similarity_score']))
-        
+            """, (
+                int(row['product_id']), 
+                int(row['similar_product_id']), 
+                float(row['similarity_score'])
+            ))
+
         # Refresh materialized view
         print("Refreshing popular products view...")
         cur.execute("REFRESH MATERIALIZED VIEW popular_products")
