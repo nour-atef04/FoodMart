@@ -8,24 +8,27 @@ const router = express.Router();
 
 // Get recommendations based on cart items
 // authenticate it to ensure unauthenticated users  cannot spam the database with complex similarity queries
-router.post("/cart-recommendations", authenticateToken, async (req, res) => {
-  try {
-    const { cartItems } = req.body;
+router.post(
+  "/cart-recommendations",
+  authenticateToken,
+  async (req, res, next) => {
+    try {
+      const { cartItems } = req.body;
 
-    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
-      // Return popular products if no cart items
-      const popularProducts = await db.query(`
+      if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+        // Return popular products if no cart items
+        const popularProducts = await db.query(`
         SELECT * FROM popular_products LIMIT 5
       `);
-      return res.json(popularProducts.rows);
-    }
+        return res.json(popularProducts.rows);
+      }
 
-    // Get product IDs from cart
-    const cartProductIds = cartItems.map((item) => item.product_id);
+      // Get product IDs from cart
+      const cartProductIds = cartItems.map((item) => item.product_id);
 
-    // Get recommendations based on cart items
-    const recommendations = await db.query(
-      `
+      // Get recommendations based on cart items
+      const recommendations = await db.query(
+        `
       WITH cart_similarities AS (
         SELECT 
           ps.similar_product_id,
@@ -56,17 +59,17 @@ router.post("/cart-recommendations", authenticateToken, async (req, res) => {
       ORDER BY similar_product_id, similarity_score DESC
       LIMIT 5
       `,
-      [cartProductIds]
-    );
+        [cartProductIds],
+      );
 
-    res.json(recommendations.rows);
-  } catch (error) {
-    console.error("Error getting recommendations:", error);
-    res.status(500).json({ error: "Failed to get recommendations" });
-  }
-});
+      res.json(recommendations.rows);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
-router.get("/product/:productId", authenticateToken, async (req, res) => {
+router.get("/product/:productId", authenticateToken, async (req, res, next) => {
   try {
     const { productId } = req.params;
 
@@ -87,8 +90,7 @@ router.get("/product/:productId", authenticateToken, async (req, res) => {
 
     res.json(recommendations.rows);
   } catch (error) {
-    console.error("Error getting product recommendations:", error);
-    res.status(500).json({ error: "Failed to get recommendations" });
+    next(error);
   }
 });
 

@@ -12,25 +12,6 @@ export const cookieOptions = {
   maxAge: AUTH_COOKIE_MAX_AGE,
 };
 
-export const readCookie = (req, cookieName) => {
-  const cookieHeader = req.headers.cookie;
-  if (!cookieHeader) {
-    return null;
-  }
-
-  const cookies = cookieHeader.split(";").reduce((acc, cookiePart) => {
-    const [rawKey, ...rawValue] = cookiePart.trim().split("=");
-    if (!rawKey) {
-      return acc;
-    }
-
-    acc[rawKey] = decodeURIComponent(rawValue.join("="));
-    return acc;
-  }, {});
-
-  return cookies[cookieName] || null;
-};
-
 export const signAuthToken = (user) => {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET is not configured");

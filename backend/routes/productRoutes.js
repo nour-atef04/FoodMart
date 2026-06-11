@@ -7,7 +7,7 @@ import { recommendationsQueue } from "../config/queue.js";
 const router = express.Router();
 
 // GET ALL STORE PRODUCTS
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, async (req, res, next) => {
   const { search = "", category = "", page = "1", limit = "10" } = req.query;
 
   try {
@@ -73,12 +73,12 @@ router.get("/", authenticateToken, async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).send(error.message);
+    next(error);
   }
 });
 
 // GET ONE
-router.get("/:product_id", authenticateToken, async (req, res) => {
+router.get("/:product_id", authenticateToken, async (req, res, next) => {
   const { product_id } = req.params;
 
   try {
@@ -93,10 +93,7 @@ router.get("/:product_id", authenticateToken, async (req, res) => {
 
     res.status(200).json(result.rows[0]);
   } catch (error) {
-    res.status(500).json({
-      message: "Failed to fetch product",
-      error: error.message,
-    });
+    next(error);
   }
 });
 
@@ -105,7 +102,7 @@ router.post(
   "/",
   authenticateToken,
   requireRole("employee"),
-  async (req, res) => {
+  async (req, res, next) => {
     const {
       product_name,
       product_description,
@@ -164,11 +161,7 @@ router.post(
         product: newProduct,
       });
     } catch (error) {
-      console.error("Product addition error:", error);
-      res.status(500).json({
-        message: "Product addition failed",
-        error: error.message,
-      });
+      next(error);
     }
   },
 );
@@ -178,7 +171,7 @@ router.put(
   "/:product_id",
   authenticateToken,
   requireRole("employee"),
-  async (req, res) => {
+  async (req, res, next) => {
     const { product_id } = req.params;
     const {
       product_name,
@@ -237,11 +230,7 @@ router.put(
         product: updatedProduct,
       });
     } catch (error) {
-      console.error("Product update error:", error);
-      res.status(500).json({
-        message: "Product update failed",
-        error: error.message,
-      });
+      next(error);
     }
   },
 );
@@ -251,7 +240,7 @@ router.delete(
   "/:product_id",
   authenticateToken,
   requireRole("employee"),
-  async (req, res) => {
+  async (req, res, next) => {
     const { product_id } = req.params;
 
     try {
@@ -271,11 +260,7 @@ router.delete(
         product_id: product_id,
       });
     } catch (error) {
-      console.error("Product deletion error:", error);
-      res.status(500).json({
-        message: "Product deletion failed",
-        error: error.message,
-      });
+      next(error);
     }
   },
 );

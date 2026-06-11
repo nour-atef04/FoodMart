@@ -80,7 +80,7 @@ router.post("/register", authLimiter, async (req, res) => {
 });
 
 // LOGIN
-router.post("/login", authLimiter, async (req, res) => {
+router.post("/login", authLimiter, async (req, res, next) => {
   const { email, password, role } = req.body;
 
   // normalize the email
@@ -119,7 +119,7 @@ router.post("/login", authLimiter, async (req, res) => {
       res.status(401).json({ message: "Invalid email or password" }); // not 'email not found' to prevent email enumeration
     }
   } catch (error) {
-    res.status(500).json({ message: "Login error", error: error.message });
+    next(error);
   }
 });
 

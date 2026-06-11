@@ -1,13 +1,12 @@
 import jwt from "jsonwebtoken";
 import {
-  readCookie,
   clearAuthCookie,
   COOKIE_NAME,
 } from "../utils/authHelpers.js";
 
 export const authenticateToken = async (req, res, next) => {
   try {
-    const token = readCookie(req, COOKIE_NAME);
+    const token = req.cookies[COOKIE_NAME];
     if (!token) {
       return res.status(401).json({ message: "Authentication required" });
     }

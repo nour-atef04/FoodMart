@@ -9,7 +9,7 @@ router.get(
   "/cartItems",
   authenticateToken,
   requireRole("customer"),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const result = await db.query(
         `SELECT 
@@ -31,9 +31,7 @@ router.get(
       );
       res.status(200).json(result.rows); // RETURN ALL CART ITEMS
     } catch (error) {
-      res
-        .status(500)
-        .json({ message: "Cart fetch error", error: error.message });
+      next(error);
     }
   },
 );
@@ -43,7 +41,7 @@ router.post(
   "/cartItems",
   authenticateToken,
   requireRole("customer"),
-  async (req, res) => {
+  async (req, res, next) => {
     const { product_id, item_quantity, total_item_price } = req.body;
     const user_id = req.user.user_id;
     try {
@@ -114,9 +112,7 @@ router.post(
 
       res.status(200).json({ message: "Cart updated" });
     } catch (error) {
-      res
-        .status(500)
-        .json({ message: "Cart update error", error: error.message });
+      next(error);
     }
   },
 );
@@ -126,7 +122,7 @@ router.delete(
   "/cartItems/:product_id",
   authenticateToken,
   requireRole("customer"),
-  async (req, res) => {
+  async (req, res, next) => {
     const { product_id } = req.params;
     const user_id = req.user.user_id;
     try {
@@ -136,7 +132,7 @@ router.delete(
       );
       res.status(200).json({ message: "Item removed" });
     } catch (error) {
-      res.status(500).json({ message: "Delete error", error: error.message });
+      next(error);
     }
   },
 );
@@ -146,11 +142,16 @@ router.post(
   "/checkout",
   authenticateToken,
   requireRole("customer"),
-  async (req, res) => {
+  async (req, res, next) => {
     const userId = req.user.user_id;
 
     try {
+      // start the transaction
       await db.query("BEGIN");
+
+      // set the safety timeout
+      // LOCAL to apply only to that current transaction
+      await db.query("SET LOCAL statement_timeout = '5s'");
 
       const cartResult = await db.query(
         `SELECT 
@@ -210,10 +211,7 @@ router.post(
         console.error("Rollback error:", rollbackError);
       }
 
-      res.status(500).json({
-        message: "Checkout failed",
-        error: error.message,
-      });
+      next(error);
     }
   },
 );
