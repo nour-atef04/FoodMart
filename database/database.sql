@@ -75,7 +75,9 @@ ON product_similarities(product_id);
 -- ==================================
 -- ==================================
 
--- Create materialized view for popular products (to avoid recalculating similarity scores for every user)
+-- Create materialized view (snapshot) for popular products (to avoid recalculating similarity scores by joining databases for every user, therefore faster reads)
+-- materialized view -> for faster reads
+-- job queue (Redis + BullMQ) -> for faster writes/mutations (to avoid waiting for the script to run everytime user adds)
 CREATE MATERIALIZED VIEW IF NOT EXISTS popular_products AS
 SELECT 
     sp.product_id as id,

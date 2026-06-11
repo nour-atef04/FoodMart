@@ -1,7 +1,8 @@
 import express from "express";
 import db from "../config/db.js";
 import { authenticateToken, requireRole } from "../middleware/auth.js";
-import { parseStockQuantity, updateRecommendations } from "../utils/helpers.js";
+import { parseStockQuantity } from "../utils/helpers.js";
+import { recommendationsQueue } from "../config/queue.js";
 
 const router = express.Router();
 
@@ -118,15 +119,7 @@ router.post(
 
       const newProduct = result.rows[0];
 
-      // Update recommendations after adding new product
-      console.log("Product added successfully, updating recommendations...");
-      try {
-        await updateRecommendations();
-        console.log("Successfully updated recommendations");
-      } catch (recError) {
-        console.error("Failed to update recommendations:", recError);
-        // Don't fail the request if recommendations update fails
-      }
+      await recommendationsQueue.add("update-recs", {});
 
       res.status(201).json({
         message: "Product added successfully",
@@ -199,14 +192,7 @@ router.put(
 
       const updatedProduct = result.rows[0];
 
-      // Update recommendations after updating product
-      try {
-        await updateRecommendations();
-        console.log("Successfully updated recommendations");
-      } catch (recError) {
-        console.error("Failed to update recommendations:", recError);
-        // Don't fail the request if recommendations update fails
-      }
+      await recommendationsQueue.add("update-recs", {});
 
       res.status(200).json({
         message: "Product updated successfully",
@@ -240,14 +226,7 @@ router.delete(
         return res.status(404).json({ message: "Product not found" });
       }
 
-      // Update recommendations after deleting product
-      try {
-        await updateRecommendations();
-        console.log("Successfully updated recommendations");
-      } catch (recError) {
-        console.error("Failed to update recommendations:", recError);
-        // Don't fail the request if recommendations update fails
-      }
+      await recommendationsQueue.add("update-recs", {});
 
       res.status(200).json({
         message: "Product deleted successfully",
