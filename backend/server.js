@@ -8,7 +8,7 @@ import rateLimit from "express-rate-limit"; // for rate limiting endpoints
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
-import recommendationsRouter from "./routes/recommendations.js";
+import recommendationsRouter from "./routes/recommendationsRoutes.js";
 
 dotenv.config();
 

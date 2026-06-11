@@ -11,6 +11,7 @@ import Title from "./Title";
 import SortProductsButtons from "./SortProductsButtons";
 import useStoreProducts from "../hooks/useStoreProducts";
 import useCartItems from "../hooks/useCartItems";
+import Pagination from "./Pagination";
 
 // REDUCER FUNCTION FOR CART ITEMS
 const cartReducer = (state, action) => {
@@ -19,7 +20,7 @@ const cartReducer = (state, action) => {
       return action.payLoad;
     case "addItem":
       const existingProduct = state.find(
-        (item) => item.product_id === action.payLoad.product_id
+        (item) => item.product_id === action.payLoad.product_id,
       );
       if (existingProduct) {
         return state.map((item) =>
@@ -32,7 +33,7 @@ const cartReducer = (state, action) => {
                   (item.item_quantity + action.payLoad.item_quantity) *
                   item.product_price,
               }
-            : item
+            : item,
         );
       }
 
@@ -51,8 +52,8 @@ const productsReducer = (state, action) => {
     case "setProducts":
       return {
         ...state,
-        productsToDisplay: action.payLoad,
-        backupProducts: action.payLoad,
+        productsToDisplay: action.payLoad.products,
+        backupProducts: action.payLoad.products,
         searched: null,
       };
     case "filterProducts":
@@ -90,9 +91,14 @@ function Store() {
   const categoryQuery = searchParams.get("category") || "";
   const activeFilter = searchQuery || categoryQuery;
 
-  const { storeProducts, refetchStoreProducts } = useStoreProducts(
+  // Extract the page query, defaulting to 1
+  const pageQuery = parseInt(searchParams.get("page") || "1", 10);
+
+  // Pass pageQuery to custom hook, and extract the pagination object
+  const { storeProducts, pagination, refetchStoreProducts } = useStoreProducts(
     searchQuery,
     categoryQuery,
+    pageQuery,
   ); // CUSTOM HOOK TO GET STORE PRODUCTS FROM DATABASE
   const { fetchedCartItems } = useCartItems();
 
@@ -103,12 +109,12 @@ function Store() {
     {
       productsToDisplay: storeProducts, // PRODUCTS CURRENTLY IN DISPLAY
       backupProducts: storeProducts, // BACKUP FOR UNSORTING
-    }
+    },
   );
 
   // LOAD ALL STORE PRODUCTS
   useEffect(() => {
-    productsDispatch({ type: "setProducts", payLoad: storeProducts });
+    productsDispatch({ type: "setProducts", payLoad: { products: storeProducts } });
   }, [storeProducts]);
 
   // LOAD ALL CART ITEMS
@@ -119,12 +125,12 @@ function Store() {
   // HANDLING CART ITEMS
   async function addItemToCart(id, itemQuantity) {
     const productToAdd = storeProducts.find(
-      (product) => product.product_id === id
+      (product) => product.product_id === id,
     );
     if (productToAdd) {
       const availableStock = Number(productToAdd.stock_quantity) || 0;
       const currentCartItem = cartItems.find(
-        (item) => item.product_id === productToAdd.product_id
+        (item) => item.product_id === productToAdd.product_id,
       );
       const currentCartQuantity = currentCartItem
         ? Number(currentCartItem.item_quantity) || 0
@@ -208,8 +214,8 @@ function Store() {
     const nextSearchParams = new URLSearchParams(searchParams);
 
     Object.entries(nextParams).forEach(([key, value]) => {
-      if (value && value.trim()) {
-        nextSearchParams.set(key, value.trim());
+      if (value && String(value).trim()) {
+        nextSearchParams.set(key, String(value).trim());
       } else {
         nextSearchParams.delete(key);
       }
@@ -219,15 +225,26 @@ function Store() {
   }
 
   function searchStoreProducts(search) {
-    updateQueryParams({ search, category: "" });
+    updateQueryParams({ search, category: "", page: "1" });
   }
 
   function filterStoreProducts(category) {
-    updateQueryParams({ category, search: "" });
+    updateQueryParams({ category, search: "", page: "1" });
   }
 
   function clearFilters() {
     setSearchParams({}, { replace: true });
+  }
+
+  function handlePageChange(newPage) {
+    // Keep existing search/category, just update the page
+    updateQueryParams({
+      search: searchQuery,
+      category: categoryQuery,
+      page: newPage,
+    });
+    // scroll to top of page when navigating
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   // SORT PRODUCTS BY USER'S CHOICE
@@ -237,14 +254,14 @@ function Store() {
 
   function sortPricesHighToLow() {
     const sortedProducts = [...productsToDisplay].sort(
-      (a, b) => b.product_price - a.product_price
+      (a, b) => b.product_price - a.product_price,
     );
     productsDispatch({ type: "sortProducts", payLoad: sortedProducts });
   }
 
   function sortPricesLowToHigh() {
     const sortedProducts = [...productsToDisplay].sort(
-      (a, b) => a.product_price - b.product_price
+      (a, b) => a.product_price - b.product_price,
     );
     productsDispatch({ type: "sortProducts", payLoad: sortedProducts });
   }
@@ -259,10 +276,7 @@ function Store() {
         role="customer"
         addItemToCart={addItemToCart}
       >
-        <SearchBar
-          searchValue={searchQuery}
-          onSearch={searchStoreProducts}
-        />
+        <SearchBar searchValue={searchQuery} onSearch={searchStoreProducts} />
         <Title
           handleTitleClick={() => {
             clearFilters();
@@ -292,6 +306,13 @@ function Store() {
           </div>
         ))}
       </CardGrid>
+      {pagination && (
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
       <Footer />
     </div>
   );

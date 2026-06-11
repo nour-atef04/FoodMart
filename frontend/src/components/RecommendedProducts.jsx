@@ -18,6 +18,7 @@ export default function RecommendedProducts({ cartItems, addToCart }) {
             headers: {
               "Content-Type": "application/json",
             },
+            credentials: "include",
             body: JSON.stringify({ cartItems }),
           }
         );

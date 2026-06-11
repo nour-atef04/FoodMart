@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-const useStoreProducts = (search = "", category = "") => {
+const useStoreProducts = (search = "", category = "", page = 1) => {
   const [storeProducts, setStoreProducts] = useState([]);
+  const [pagination, setPagination] = useState(null); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -11,32 +12,38 @@ const useStoreProducts = (search = "", category = "") => {
     setError(null);
 
     try {
-      const params = {};
-
-      if (search.trim()) {
-        params.search = search.trim();
-      }
-
-      if (category.trim()) {
-        params.category = category.trim();
-      }
+      const params = {
+        search: search.trim(),
+        category: category.trim(),
+        page: page, 
+        limit: 10, 
+      };
 
       const response = await axios.get("http://localhost:5000/api/storeProducts", {
         params,
       });
-      setStoreProducts(response.data);
+
+      setStoreProducts(response.data.products);
+      setPagination(response.data.pagination);
+
     } catch (requestError) {
       setError(requestError);
     } finally {
       setLoading(false);
     }
-  }, [search, category]);
+  }, [search, category, page]); 
 
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
 
-  return { storeProducts, loading, error, refetchStoreProducts: fetchProducts };
+  return { 
+    storeProducts, 
+    pagination, 
+    loading, 
+    error, 
+    refetchStoreProducts: fetchProducts 
+  };
 };
 
 export default useStoreProducts;

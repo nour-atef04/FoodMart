@@ -19,7 +19,7 @@ export default function ControlPanel() {
     axios
       .get("http://localhost:5000/api/storeProducts")
       .then((response) => {
-        setProducts(response.data);
+        setProducts(response.data.products || []);
       })
       .catch((error) => {
         console.error("Error fetching products", error);

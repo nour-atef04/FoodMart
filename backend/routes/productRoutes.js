@@ -8,17 +8,23 @@ const router = express.Router();
 
 // GET ALL STORE PRODUCTS
 router.get("/", authenticateToken, async (req, res) => {
-  const { search = "", category = "" } = req.query;
+  const { search = "", category = "", page = "1", limit = "10" } = req.query;
 
   try {
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+    const offset = (pageNum - 1) * limitNum;
+
     const conditions = [];
     const values = [];
 
+    // apply category filter
     if (category.trim()) {
       values.push(category.trim());
       conditions.push(`product_category = $${values.length}`);
     }
 
+    // apply search filter
     if (search.trim()) {
       values.push(`%${search.trim()}%`);
       conditions.push(
@@ -26,16 +32,46 @@ router.get("/", authenticateToken, async (req, res) => {
       );
     }
 
+    // count total items (for frontend pagination controls)
+    const countQuery = [
+      "SELECT COUNT(*) FROM store_products",
+      conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const countResult = await db.query(countQuery, values);
+    const totalItems = parseInt(countResult.rows[0].count, 10);
+    const totalPages = Math.ceil(totalItems / limitNum);
+
+    // add LIMIT and OFFSET to the main query securely
+    values.push(limitNum);
+    const limitParamIndex = values.length;
+
+    values.push(offset);
+    const offsetParamIndex = values.length;
+
     const query = [
       "SELECT * FROM store_products",
       conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
       "ORDER BY product_name ASC",
+      `LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
     ]
       .filter(Boolean)
       .join(" ");
 
     const result = await db.query(query, values);
-    res.status(200).json(result.rows); // RETURN ALL STORE PRODUCTS
+
+    // return the products + the pagination metadata
+    res.status(200).json({
+      products: result.rows,
+      pagination: {
+        totalItems,
+        totalPages,
+        currentPage: pageNum,
+        limit: limitNum,
+      },
+    });
   } catch (error) {
     res.status(500).send(error.message);
   }
