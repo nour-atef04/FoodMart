@@ -3,11 +3,20 @@ import bcrypt from "bcrypt";
 import db from "../config/db.js";
 import { setAuthCookie, clearAuthCookie } from "../utils/authHelpers.js";
 import { authenticateToken } from "../middleware/auth.js";
+import rateLimit from "express-rate-limit";
 
 const router = express.Router();
 
+// AUTH LIMITER
+// stricter limiter for auth actions (10 attempts per 15 mins)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 mins
+  max: 10, 
+  message: { message: "Too many authentication attempts, please try again later." },
+});
+
 // REGISTER
-router.post("/register", async (req, res) => {
+router.post("/register", authLimiter, async (req, res) => {
   const { email, password, name } = req.body;
   const role = "customer";
 
@@ -50,7 +59,7 @@ router.post("/register", async (req, res) => {
 });
 
 // LOGIN
-router.post("/login", async (req, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   const { email, password, role } = req.body;
 
   if (!email || !password) {
@@ -91,6 +100,7 @@ router.post("/login", async (req, res) => {
 });
 
 // LOGOUT
+// no rate limit needed here
 router.post("/logout", (req, res) => {
   clearAuthCookie(res);
   res.status(200).json({ message: "Logged out successfully" });

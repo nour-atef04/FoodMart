@@ -119,6 +119,8 @@ router.post(
 
       const newProduct = result.rows[0];
 
+      // drops a ticket into the queue and immediately returns a success response to the client
+      // empty payload since only a command is called
       await recommendationsQueue.add("update-recs", {});
 
       res.status(201).json({

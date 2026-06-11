@@ -2,11 +2,13 @@ import express from "express";
 import pg from "pg";
 import db from "../config/db.js";
 import dotenv from "dotenv";
+import { authenticateToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
 // Get recommendations based on cart items
-router.post("/cart-recommendations", async (req, res) => {
+// authenticate it to ensure unauthenticated users  cannot spam the database with complex similarity queries
+router.post("/cart-recommendations", authenticateToken, async (req, res) => {
   try {
     const { cartItems } = req.body;
 
@@ -64,7 +66,7 @@ router.post("/cart-recommendations", async (req, res) => {
   }
 });
 
-router.get("/product/:productId", async (req, res) => {
+router.get("/product/:productId", authenticateToken, async (req, res) => {
   try {
     const { productId } = req.params;
 
