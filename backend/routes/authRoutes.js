@@ -11,8 +11,10 @@ const router = express.Router();
 // stricter limiter for auth actions (10 attempts per 15 mins)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 mins
-  max: 10, 
-  message: { message: "Too many authentication attempts, please try again later." },
+  max: 10,
+  message: {
+    message: "Too many authentication attempts, please try again later.",
+  },
 });
 
 // REGISTER
@@ -20,17 +22,36 @@ router.post("/register", authLimiter, async (req, res) => {
   const { email, password, name } = req.body;
   const role = "customer";
 
+  // normalize email (convert to lowercase and remove spaces) since UNIQUE in postgresql is case-sensitive 
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+
   // Basic validation
-  if (!email || !password || !name) {
+  if (!normalizedEmail || !password || !name) {
     return res
       .status(400)
       .json({ message: "Name, email and password are required" });
   }
 
+  // password strength validation
+  // Minimum Length
+  if (password.length < 6) {
+    return res
+      .status(400)
+      .json({ message: "Password must be at least 6 characters long" });
+  }
+
+  // Complexity (Must contain at least one letter and one number)
+  const complexityRegex = /^(?=.*[A-Za-z])(?=.*\d).+$/;
+  if (!complexityRegex.test(password)) {
+    return res.status(400).json({
+      message: "Password must contain at least one letter and one number",
+    });
+  }
+
   try {
     // Check if user already exists
     const userCheck = await db.query("SELECT * FROM users WHERE email = $1", [
-      email,
+      normalizedEmail,
     ]);
     if (userCheck.rows.length > 0) {
       return res.status(409).json({ message: "Email already in use" });
@@ -39,7 +60,7 @@ router.post("/register", authLimiter, async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await db.query(
       "INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING user_id, email, name, role",
-      [email, hashedPassword, name, role],
+      [normalizedEmail, hashedPassword, name, role],
     );
 
     const user = result.rows[0];
@@ -62,13 +83,16 @@ router.post("/register", authLimiter, async (req, res) => {
 router.post("/login", authLimiter, async (req, res) => {
   const { email, password, role } = req.body;
 
-  if (!email || !password) {
+  // normalize the email
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+
+  if (!normalizedEmail || !password) {
     return res.status(400).json({ message: "Email and password are required" });
   }
 
   try {
     const result = await db.query("SELECT * FROM users WHERE email = $1", [
-      email,
+      normalizedEmail,
     ]);
     const user = result.rows[0];
 
@@ -92,7 +116,7 @@ router.post("/login", authLimiter, async (req, res) => {
         user: authUser,
       });
     } else {
-      res.status(401).json({ message: "Invalid email or password" });
+      res.status(401).json({ message: "Invalid email or password" }); // not 'email not found' to prevent email enumeration
     }
   } catch (error) {
     res.status(500).json({ message: "Login error", error: error.message });

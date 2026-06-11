@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import db from "../config/db.js";
 import {
   readCookie,
   clearAuthCookie,
@@ -17,18 +16,10 @@ export const authenticateToken = async (req, res, next) => {
       return res.status(500).json({ message: "JWT secret is not configured" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const result = await db.query(
-      "SELECT user_id, email, name, role FROM users WHERE user_id = $1",
-      [decoded.user_id],
-    );
+    const decodedPayload = jwt.verify(token, process.env.JWT_SECRET);
+    
+    req.user = decodedPayload;
 
-    if (result.rows.length === 0) {
-      clearAuthCookie(res);
-      return res.status(401).json({ message: "Authentication required" });
-    }
-
-    req.user = result.rows[0];
     next();
   } catch (error) {
     clearAuthCookie(res);

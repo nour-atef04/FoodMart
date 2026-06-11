@@ -36,6 +36,7 @@ export const signAuthToken = (user) => {
     throw new Error("JWT_SECRET is not configured");
   }
 
+  // payload of jwt
   return jwt.sign(
     {
       user_id: user.user_id,
