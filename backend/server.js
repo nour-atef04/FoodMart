@@ -33,15 +33,17 @@ const globalLimiter = rateLimit({
 
 // Global Middleware
 
-// This automatically attaches a unique request ID to every incoming call
-app.use(
-  pinoHttp({
-    transport: {
-      target: "pino-pretty",
-      options: { colorize: true },
-    },
-  }),
-);
+// Check if we are in production
+const isProduction = process.env.NODE_ENV === "production";
+
+// Use the formatter conditionally so it doesn't slow app in production
+// pino automatically attaches a unique request ID to every incoming call
+app.use(pinoHttp({
+  transport: isProduction ? undefined : {
+    target: 'pino-pretty',
+    options: { colorize: true }
+  }
+}));
 
 app.use(cors({ origin: frontendOrigin, credentials: true }));
 app.use(compression());
@@ -59,6 +61,19 @@ app.use("/api", authRoutes);
 app.use("/api", cartRoutes);
 app.use("/api/storeProducts", productRoutes);
 app.use("/api/recommendations", recommendationsRouter);
+
+// Error Simulation
+// app.get("/api/test-error", (req, res, next) => {
+//   try {
+//     // Simulate a catastrophic failure 
+//     const brokenData = someUndefinedVariable.data; 
+    
+//     res.json({ message: "You will never see this!" });
+//   } catch (error) {
+//     // Pass the error directly to Pino and the Global Error Handler
+//     next(error); 
+//   }
+// });
 
 // Global Error Handler
 app.use((err, req, res, next) => {

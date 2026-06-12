@@ -3,6 +3,11 @@ import pg from "pg";
 import db from "../config/db.js";
 import dotenv from "dotenv";
 import { authenticateToken } from "../middleware/auth.js";
+import {
+  cartRecommendationsSchema,
+  productRecommendationsSchema,
+} from "../zodSchemas/recommendationsSchemas.js";
+import { validate } from "../middleware/validate.js";
 
 const router = express.Router();
 
@@ -11,11 +16,12 @@ const router = express.Router();
 router.post(
   "/cart-recommendations",
   authenticateToken,
+  validate(cartRecommendationsSchema),
   async (req, res, next) => {
     try {
       const { cartItems } = req.body;
 
-      if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+      if (cartItems.length === 0) {
         // Return popular products if no cart items
         const popularProducts = await db.query(`
         SELECT * FROM popular_products LIMIT 5
@@ -69,12 +75,16 @@ router.post(
   },
 );
 
-router.get("/product/:productId", authenticateToken, async (req, res, next) => {
-  try {
-    const { productId } = req.params;
+router.get(
+  "/product/:productId",
+  authenticateToken,
+  validate(productRecommendationsSchema),
+  async (req, res, next) => {
+    try {
+      const { productId } = req.params;
 
-    const recommendations = await db.query(
-      `
+      const recommendations = await db.query(
+        `
       SELECT DISTINCT ON (ps.similar_product_id)
         sp.*,
         ps.similarity_score
@@ -85,13 +95,14 @@ router.get("/product/:productId", authenticateToken, async (req, res, next) => {
       ORDER BY ps.similar_product_id, ps.similarity_score DESC
       LIMIT 6
       `,
-      [productId],
-    );
+        [productId],
+      );
 
-    res.json(recommendations.rows);
-  } catch (error) {
-    next(error);
-  }
-});
+      res.json(recommendations.rows);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 export default router;

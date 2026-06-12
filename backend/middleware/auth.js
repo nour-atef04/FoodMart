@@ -4,6 +4,7 @@ import {
   COOKIE_NAME,
 } from "../utils/authHelpers.js";
 
+
 export const authenticateToken = async (req, res, next) => {
   try {
     const token = req.cookies[COOKIE_NAME];

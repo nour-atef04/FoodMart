@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy Node.js package files and install dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install
 
 # Copy the rest of the backend application code
 COPY . .

@@ -1,6 +1,8 @@
 import express from "express";
 import db from "../config/db.js";
 import { authenticateToken, requireRole } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
+import { cartItemSchema } from "../zodSchemas/cartSchemas.js";
 
 const router = express.Router();
 
@@ -41,17 +43,12 @@ router.post(
   "/cartItems",
   authenticateToken,
   requireRole("customer"),
+  validate(cartItemSchema),
   async (req, res, next) => {
     const { product_id, item_quantity, total_item_price } = req.body;
     const user_id = req.user.user_id;
+    const requestedQuantity = item_quantity;
     try {
-      const requestedQuantity = Number.parseInt(item_quantity, 10);
-      if (!Number.isFinite(requestedQuantity) || requestedQuantity <= 0) {
-        return res
-          .status(400)
-          .json({ message: "Item quantity must be at least 1" });
-      }
-
       const productResult = await db.query(
         "SELECT stock_quantity, product_price FROM store_products WHERE product_id = $1",
         [product_id],
