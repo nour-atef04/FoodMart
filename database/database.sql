@@ -46,7 +46,10 @@ CREATE TABLE IF NOT EXISTS cart_items (
     cart_item_id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
     product_id INTEGER REFERENCES store_products(product_id) ON DELETE CASCADE,
-    item_quantity INTEGER NOT NULL
+    item_quantity INTEGER NOT NULL,
+
+    CONSTRAINT unique_user_product
+        UNIQUE (user_id, product_id)
 );
 
 -- product_similarities table for recommendations (0-1 scale)

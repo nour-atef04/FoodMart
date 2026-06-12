@@ -13,7 +13,7 @@ const db = new pg.Pool({
   idleTimeoutMillis: 30000, // close idle clients after 30 seconds
 });
 
-db.query('SELECT NOW()', (err, res) => {
+db.query("SELECT NOW()", (err, res) => {
   if (err) {
     console.error("Error connecting to the database:", err.stack);
   } else {
@@ -22,9 +22,12 @@ db.query('SELECT NOW()', (err, res) => {
 });
 
 // Catch pool errors that happen behind the scenes
-db.on('error', (err) => {
-  console.error('Unexpected error on idle database client', err);
-  process.exit(-1);
+db.on("error", (err) => {
+  console.error("Unexpected error on idle database client", err);
+  // Only exit in production; in test mode, just log the error
+  if (process.env.NODE_ENV !== "test") {
+    process.exit(-1);
+  }
 });
 
 export default db;

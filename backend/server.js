@@ -38,12 +38,16 @@ const isProduction = process.env.NODE_ENV === "production";
 
 // Use the formatter conditionally so it doesn't slow app in production
 // pino automatically attaches a unique request ID to every incoming call
-app.use(pinoHttp({
-  transport: isProduction ? undefined : {
-    target: 'pino-pretty',
-    options: { colorize: true }
-  }
-}));
+app.use(
+  pinoHttp({
+    transport: isProduction
+      ? undefined
+      : {
+          target: "pino-pretty",
+          options: { colorize: true },
+        },
+  }),
+);
 
 app.use(cors({ origin: frontendOrigin, credentials: true }));
 app.use(compression());
@@ -65,13 +69,13 @@ app.use("/api/recommendations", recommendationsRouter);
 // Error Simulation
 // app.get("/api/test-error", (req, res, next) => {
 //   try {
-//     // Simulate a catastrophic failure 
-//     const brokenData = someUndefinedVariable.data; 
-    
+//     // Simulate a catastrophic failure
+//     const brokenData = someUndefinedVariable.data;
+
 //     res.json({ message: "You will never see this!" });
 //   } catch (error) {
 //     // Pass the error directly to Pino and the Global Error Handler
-//     next(error); 
+//     next(error);
 //   }
 // });
 
@@ -81,15 +85,20 @@ app.use((err, req, res, next) => {
   req.log.error({ err }, "Unhandled API Error");
 
   const statusCode = err.statusCode || 500;
-  
+
   res.status(statusCode).json({
     message: err.message || "Internal Server Error",
     // only send the raw stack trace to the frontend if we are in development mode
-    stack: process.env.NODE_ENV === "production" ? "🥞" : err.stack
+    stack: process.env.NODE_ENV === "production" ? "🥞" : err.stack,
   });
 });
 
 // Start Server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
+
+// so Supertest can use it
+export default app;

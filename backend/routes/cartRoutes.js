@@ -68,9 +68,18 @@ router.post(
       const availableStock =
         Number.parseInt(productResult.rows[0].stock_quantity, 10) || 0;
 
-      // lock the user's cart item row (if it exists) to prevent duplicate inserts
+      console.log(
+        "Request:",
+        process.hrtime.bigint().toString(),
+        "stock:",
+        availableStock,
+        "user:",
+        user_id,
+      );
+
+      // Get the current cart item for this user and product
       const existingItem = await db.query(
-        "SELECT * FROM cart_items WHERE product_id = $1 AND user_id = $2 FOR UPDATE",
+        `SELECT item_quantity FROM cart_items WHERE product_id = $1 AND user_id = $2`,
         [product_id, user_id],
       );
 
@@ -79,13 +88,27 @@ router.post(
           ? Number.parseInt(existingItem.rows[0].item_quantity, 10) || 0
           : 0;
 
-      const remainingStock = availableStock - currentCartQuantity;
+      // Get the total quantity of this product across ALL users' carts
+      const totalInCarts = await db.query(
+        `SELECT COALESCE(SUM(item_quantity), 0) as total FROM cart_items WHERE product_id = $1`,
+        [product_id],
+      );
 
-      if (remainingStock <= 0 || requestedQuantity > remainingStock) {
+      const usedStock = Number.parseInt(totalInCarts.rows[0].total, 10) || 0;
+      const remainingStock = availableStock - usedStock;
+
+      console.log("Current cart quantity:", currentCartQuantity);
+      console.log("Used stock by all users:", usedStock);
+      console.log("Remaining stock:", remainingStock);
+
+      // Check if adding this request's quantity would exceed available stock
+      if (requestedQuantity > remainingStock) {
         await db.query("ROLLBACK");
         return res.status(409).json({
           message: "Not enough stock available",
           availableStock,
+          usedStock,
+          remainingStock,
         });
       }
 

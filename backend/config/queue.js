@@ -9,74 +9,79 @@ const connection = {
   port: process.env.REDIS_PORT || 6379,
 };
 
-// initialized queue instance
+// initialized queue instance (if testing -> export a fake queue, since tests are running locally not through docker-compose up, so redis won't run)
 // single queue can handle many different types of tasks, so named the task sent as 'update-recs'
-export const recommendationsQueue = new Queue("recommendations", {
-  connection,
-});
+export const recommendationsQueue =
+  process.env.NODE_ENV === "test"
+    ? { add: async () => console.log("[Test] Skipped adding job to queue") }
+    : new Queue("recommendations", { connection });
 
-// initialized a worker instance which constantly listens to the queue for any new jobs
-const worker = new Worker(
-  "recommendations",
-  async (job) => {
-    return new Promise((resolve, reject) => {
-      console.log(`[Worker] Starting Python calculation for job ${job.id}`);
+// initialized a worker instance which constantly listens to the queue for any new jobs (only if NOT testing)
+if (process.env.NODE_ENV !== "test") {
+  const worker = new Worker(
+    "recommendations",
+    async (job) => {
+      return new Promise((resolve, reject) => {
+        console.log(`[Worker] Starting Python calculation for job ${job.id}`);
 
-      // ---- with exec ----
-      //   const command = `python3 ./scripts/calculate_recommendations.py`;
+        // ---- with exec ----
+        //   const command = `python3 ./scripts/calculate_recommendations.py`;
 
-      //   exec(command, (error, stdout, stderr) => {
-      //     if (error) {
-      //       console.error(`[Worker Error]: ${error.message}`);
-      //       return reject(error);
-      //     }
-      //     resolve(stdout);
-      //   });
-      // });
+        //   exec(command, (error, stdout, stderr) => {
+        //     if (error) {
+        //       console.error(`[Worker Error]: ${error.message}`);
+        //       return reject(error);
+        //     }
+        //     resolve(stdout);
+        //   });
+        // });
 
-      // determine the correct Python executable path based on the environment
-      let pythonExecutable;
+        // determine the correct Python executable path based on the environment
+        let pythonExecutable;
 
-      if (process.env.IS_DOCKER === "true") {
-        // Inside Docker, Python 3 is installed globally
-        pythonExecutable = "python3";
-      } else {
-        // Local machine: check if Windows or Mac/Linux to use the correct virtual environment path
-        const isWindows = os.platform() === "win32";
-        pythonExecutable = isWindows
-          ? ".\\.venv\\Scripts\\python.exe"
-          : "./.venv/bin/python";
-      }
+        if (process.env.IS_DOCKER === "true") {
+          // Inside Docker, Python 3 is installed globally
+          pythonExecutable = "python3";
+        } else {
+          // Local machine: check if Windows or Mac/Linux to use the correct virtual environment path
+          const isWindows = os.platform() === "win32";
+          pythonExecutable = isWindows
+            ? ".\\.venv\\Scripts\\python.exe"
+            : "./.venv/bin/python";
+        }
 
-      // ---- with execFile ----
-      // execFile takes the executable first, then an array of arguments
-      execFile(
-        pythonExecutable,
-        ["./scripts/calculate_recommendations.py"],
-        (error, stdout, stderr) => {
-          if (error) {
-            console.error(`[Worker Error]: ${error.message}`);
-            return reject(error);
-          }
-          resolve(stdout);
-        },
-      );
-    });
-  },
-  { connection },
-);
+        // ---- with execFile ----
+        // execFile takes the executable first, then an array of arguments
+        execFile(
+          pythonExecutable,
+          ["./scripts/calculate_recommendations.py"],
+          (error, stdout, stderr) => {
+            if (error) {
+              console.error(`[Worker Error]: ${error.message}`);
+              return reject(error);
+            }
+            resolve(stdout);
+          },
+        );
+      });
+    },
+    { connection },
+  );
 
-worker.on("completed", (job) => {
-  console.log(`[Worker] Job ${job.id} completed. Recommendations updated.`);
-});
+  worker.on("completed", (job) => {
+    console.log(`[Worker] Job ${job.id} completed. Recommendations updated.`);
+  });
 
-// listen for job failures in the background
-worker.on("failed", (job, err) => {
-  console.error(JSON.stringify({
-    level: "error",
-    message: "Background recommendation update failed",
-    jobId: job ? job.id : "unknown",
-    error_message: err.message,
-    timestamp: new Date().toISOString()
-  }));
-});
+  // listen for job failures in the background
+  worker.on("failed", (job, err) => {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        message: "Background recommendation update failed",
+        jobId: job ? job.id : "unknown",
+        error_message: err.message,
+        timestamp: new Date().toISOString(),
+      }),
+    );
+  });
+}

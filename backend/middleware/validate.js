@@ -14,14 +14,22 @@ export const validate = (schema) => (req, res, next) => {
 
     next();
   } catch (err) {
-    const formattedErrors = err.errors.map((e) => ({
-      field: e.path.join("."),
-      message: e.message,
-    }));
+    if (err.errors && Array.isArray(err.errors)) {
+      const formattedErrors = err.errors.map((e) => ({
+        field: e.path.join("."),
+        message: e.message,
+      }));
 
-    return res.status(400).json({
-      message: "Invalid request data",
-      errors: formattedErrors,
+      return res.status(400).json({
+        message: "Validation error",
+        errors: formattedErrors,
+      });
+    }
+
+    // fallback if it's a different kind of Zod error
+    return res.status(400).json({ 
+        message: "Invalid request data",
+        details: err.message 
     });
   }
 };
