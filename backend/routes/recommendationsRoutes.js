@@ -1,13 +1,11 @@
 import express from "express";
-import pg from "pg";
 import db from "../config/db.js";
-import dotenv from "dotenv";
 import { authenticateToken } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
 import {
   cartRecommendationsSchema,
   productRecommendationsSchema,
 } from "../zodSchemas/recommendationsSchemas.js";
-import { validate } from "../middleware/validate.js";
 
 const router = express.Router();
 

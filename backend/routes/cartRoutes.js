@@ -20,7 +20,8 @@ router.get(
         store_products.product_name,
         store_products.product_price,
         cart_items.item_quantity,
-        cart_items.total_item_price
+        -- calculate the total live right in the query
+        (store_products.product_price * cart_items.item_quantity) AS total_item_price
       FROM 
         cart_items
       JOIN 
@@ -45,24 +46,31 @@ router.post(
   requireRole("customer"),
   validate(cartItemSchema),
   async (req, res, next) => {
-    const { product_id, item_quantity, total_item_price } = req.body;
+    const { product_id, item_quantity } = req.body;
     const user_id = req.user.user_id;
     const requestedQuantity = item_quantity;
     try {
+      // start the transaction and set safety timeout
+      await db.query("BEGIN");
+      await db.query("SET LOCAL statement_timeout = '5s'");
+
+      // lock product row to prevent different users from grabbing the last piece of stock at the exact same time
       const productResult = await db.query(
-        "SELECT stock_quantity, product_price FROM store_products WHERE product_id = $1",
+        "SELECT stock_quantity FROM store_products WHERE product_id = $1 FOR UPDATE",
         [product_id],
       );
 
       if (productResult.rows.length === 0) {
+        await db.query("ROLLBACK");
         return res.status(404).json({ message: "Product not found" });
       }
 
       const availableStock =
         Number.parseInt(productResult.rows[0].stock_quantity, 10) || 0;
-      const productPrice = Number(productResult.rows[0].product_price) || 0;
+
+      // lock the user's cart item row (if it exists) to prevent duplicate inserts
       const existingItem = await db.query(
-        "SELECT * FROM cart_items WHERE product_id = $1 AND user_id = $2",
+        "SELECT * FROM cart_items WHERE product_id = $1 AND user_id = $2 FOR UPDATE",
         [product_id, user_id],
       );
 
@@ -70,9 +78,11 @@ router.post(
         existingItem.rows.length > 0
           ? Number.parseInt(existingItem.rows[0].item_quantity, 10) || 0
           : 0;
+
       const remainingStock = availableStock - currentCartQuantity;
 
       if (remainingStock <= 0 || requestedQuantity > remainingStock) {
+        await db.query("ROLLBACK");
         return res.status(409).json({
           message: "Not enough stock available",
           availableStock,
@@ -80,35 +90,34 @@ router.post(
       }
 
       if (existingItem.rows.length > 0) {
-        const currentQuantity = currentCartQuantity;
-        const currentTotalPrice = parseFloat(
-          existingItem.rows[0].total_item_price,
-        );
-        const new_item_quantity = currentQuantity + requestedQuantity;
-        const new_total_item_price =
-          currentTotalPrice + productPrice * requestedQuantity;
+        const new_item_quantity = currentCartQuantity + requestedQuantity;
 
         // Update the existing item
         await db.query(
-          "UPDATE cart_items SET item_quantity = $1, total_item_price = $2 WHERE product_id = $3 AND user_id = $4",
-          [new_item_quantity, new_total_item_price, product_id, user_id],
+          "UPDATE cart_items SET item_quantity = $1 WHERE product_id = $2 AND user_id = $3",
+          [new_item_quantity, product_id, user_id],
         );
       }
       // Add new item if no existing item with same id
       else {
         await db.query(
-          "INSERT INTO cart_items (user_id, product_id, item_quantity, total_item_price) VALUES($1, $2, $3, $4)",
-          [
-            user_id,
-            product_id,
-            requestedQuantity,
-            productPrice * requestedQuantity,
-          ],
+          "INSERT INTO cart_items (user_id, product_id, item_quantity) VALUES($1, $2, $3)",
+          [user_id, product_id, requestedQuantity],
         );
       }
-
+      // save the data and release the locks
+      await db.query("COMMIT");
       res.status(200).json({ message: "Cart updated" });
     } catch (error) {
+      // recover safely from any database crashes
+      try {
+        await db.query("ROLLBACK");
+      } catch (rollbackError) {
+        req.log.error(
+          { err: rollbackError },
+          "Database ROLLBACK failed during add to cart",
+        );
+      }
       next(error);
     }
   },
@@ -150,23 +159,29 @@ router.post(
       // LOCAL to apply only to that current transaction
       await db.query("SET LOCAL statement_timeout = '5s'");
 
+      // pull the live product_price straight from the store_products table
       const cartResult = await db.query(
         `SELECT 
-        cart_items.product_id,
-        cart_items.item_quantity,
-        store_products.stock_quantity
-      FROM cart_items
-      JOIN store_products
-        ON cart_items.product_id = store_products.product_id
-      WHERE cart_items.user_id = $1
-      FOR UPDATE OF store_products`,
+          cart_items.product_id,
+          cart_items.item_quantity,
+          store_products.stock_quantity,
+          store_products.product_price
+        FROM cart_items
+        JOIN store_products
+          ON cart_items.product_id = store_products.product_id
+        WHERE cart_items.user_id = $1
+        FOR UPDATE OF store_products`,
         [userId],
       );
 
       if (cartResult.rows.length === 0) {
-        await db.query("COMMIT");
-        return res.status(200).json({ message: "Cart already empty" });
+        await db.query("ROLLBACK");
+        return res
+          .status(400)
+          .json({ message: "Cannot checkout with an empty cart" });
       }
+
+      let orderTotalCents = 0;
 
       for (const item of cartResult.rows) {
         const stockQuantity = Number.parseInt(item.stock_quantity, 10) || 0;
@@ -179,6 +194,11 @@ router.post(
             product_id: item.product_id,
           });
         }
+
+        // dynamically calculate the safe cost using the LIVE price not the cart price
+        const livePriceCents =
+          Math.round(Number(item.product_price) * 100) || 0;
+        orderTotalCents += livePriceCents * cartQuantity;
 
         const updateResult = await db.query(
           `UPDATE store_products
@@ -200,12 +220,20 @@ router.post(
       await db.query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
       await db.query("COMMIT");
 
-      res.status(200).json({ message: "Checkout completed successfully" });
+      const finalOrderTotal = orderTotalCents / 100;
+
+      res.status(200).json({
+        message: "Checkout completed successfully",
+        total_charged: finalOrderTotal,
+      });
     } catch (error) {
       try {
         await db.query("ROLLBACK");
       } catch (rollbackError) {
-        console.error("Rollback error:", rollbackError);
+        req.log.error(
+          { err: rollbackError },
+          "Database ROLLBACK failed during checkout",
+        );
       }
 
       next(error);

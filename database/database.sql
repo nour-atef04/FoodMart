@@ -109,12 +109,18 @@ ON CONFLICT (email) DO NOTHING; -- Prevents errors if the script runs twice
 
 -- ==================================
 -- ==================================
+-- INDEXES
 
--- 1. Index for fetching a user's entire cart quickly
+-- Index for fetching a user's entire cart quickly
 CREATE INDEX IF NOT EXISTS idx_cart_items_user_id ON cart_items(user_id);
 
--- 2. Composite index for finding a specific item in a specific user's cart (used for updates/deletes)
+-- Composite index for finding a specific item in a specific user's cart (used for updates/deletes)
 CREATE INDEX IF NOT EXISTS idx_cart_items_user_product ON cart_items(user_id, product_id);
 
--- 3. Index for filtering the store page by category quickly
+-- Index for filtering the store page by category quickly
 CREATE INDEX IF NOT EXISTS idx_store_products_category ON store_products(product_category);
+
+-- ==================================
+-- ==================================
+
+ALTER TABLE cart_items DROP COLUMN IF EXISTS total_item_price;
