@@ -69,3 +69,14 @@ const worker = new Worker(
 worker.on("completed", (job) => {
   console.log(`[Worker] Job ${job.id} completed. Recommendations updated.`);
 });
+
+// listen for job failures in the background
+worker.on("failed", (job, err) => {
+  console.error(JSON.stringify({
+    level: "error",
+    message: "Background recommendation update failed",
+    jobId: job ? job.id : "unknown",
+    error_message: err.message,
+    timestamp: new Date().toISOString()
+  }));
+});

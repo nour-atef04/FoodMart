@@ -7,6 +7,7 @@ export const cartItemSchema = z.object({
     item_quantity: z.coerce
       .number()
       .int()
-      .min(1, "Item quantity must be at least 1"),
+      .min(1, "Item quantity must be at least 1")
+      .max(100, "Cannot add more than 100 items at a time"),
   }),
 });

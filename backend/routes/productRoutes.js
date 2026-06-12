@@ -33,8 +33,10 @@ router.get(
       // apply search filter
       if (search) {
         values.push(`%${search}%`);
+        // matching the concatenated '||' GIN index created in Postgres
+        // in postgres, strings concatenated with null becomes all null, and since product_description is optional, wrap it in COALESCE -> tells Postgres to use '' instead
         conditions.push(
-          `(product_name ILIKE $${values.length} OR product_description ILIKE $${values.length} OR product_category ILIKE $${values.length})`,
+          `(product_name || ' ' || COALESCE(product_description, '') || ' ' || product_category) ILIKE $${values.length}`,
         );
       }
 
